@@ -1,7 +1,7 @@
 Praca Inżynierska
 =================
 
-[Architektura Serwisu](service-diagram.png)
+![Architektura Serwisu](service-diagram.png)
 
 
 ## Poprzedni system (obecny)
