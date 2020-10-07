@@ -1,7 +1,8 @@
-AI Colosseum
-============
+![AI Colloseum Banner](docs/banner.png)
 
-A system for automatic evaluation of AI agents.
+# Welcome!
+
+Colosseum is a free online platform for automatic evaluation of AI agents in games.
 
 
 ## Features
