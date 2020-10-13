@@ -4,10 +4,8 @@ digraph G {
     
     subgraph cluster_1 {
         label="Serwis";
-        supervisor [label="{Nadzorca|Serwer HTTP\nPython FastAPI|ORM PugSQL}"];
-        db_1  [label="{Baza danych|PostgreSQL}"];
+        supervisor [label="{Nadzorca|Serwer HTTP}"];
         supervisor -> judge_a, player_a, player_b;
-        supervisor -> db_1;
         subgraph cluster_1_1 {
             label="Gra\nWłasny mechanizm IPC";
             edge [dir=none];
@@ -22,8 +20,15 @@ digraph G {
         }
     }
 
+	subgraph cluster_2 {
+		label="Serwer";
+		db_2 [label="{Baza danych|PostgreSQL}"];
+		api  [label="{Serwer HTTP\nPython FastAPI|PugSQL}"];
+		api -> db_2;
+		api -> supervisor;
+	}
 
     web_app [label="{Aplikacja SPA|Vue|Pug HTML|Stylus CSS}"];
     auth    [label="{Autentykacja|Moodle LTI}"]
-    web_app -> supervisor, auth;
+    web_app -> api, auth;
 }
