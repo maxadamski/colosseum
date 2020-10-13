@@ -20,7 +20,5 @@ The `docs` directory contains the documentation of this project.
 Each component should live in it's own branch (for example `thesis`),
 which should contain a single directory with it's own `.gitignore` and `README.md`.
 
-All code should be written in English.
-
-All documentation should first be written in Polish, so it can be reused in the thesis.
+All code and documentation should be written in English.
 
