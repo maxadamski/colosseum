@@ -2,7 +2,8 @@
 
 html {
     box-sizing: border-box;
-    font-size: 18px;
+    font-family: 'Vollkorn', serif;
+    font-size: 19px;
 }
 
 *, *::before, *::after {
@@ -17,7 +18,7 @@ img, video {
 /* --- Brutal --- */
 
 body {
-    max-width: 800px;
+    max-width: 650px;
     margin: 40px auto;
     padding: 0 10px;
     color: #333;
