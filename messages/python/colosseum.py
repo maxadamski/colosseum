@@ -13,7 +13,7 @@ def close(f):
 
 def send(f, data, tag=0):
     size = len(data)
-    os.write(f, struct.pack('<Lb', size, tag))
+    os.write(f, struct.pack('=Lb', size, tag))
     assert os.write(f, bytes(data, 'utf-8')) == size
 
 def recv(f):
@@ -22,7 +22,7 @@ def recv(f):
     while len(buf) < header_len:
         select([f], [], [f])
         buf += os.read(f, header_len - len(buf))
-    size, tag = struct.unpack('<Lb', buf)
+    size, tag = struct.unpack('=Lb', buf)
     data = os.read(f, size)
     while len(data) < size:
         select([f], [], [f])
