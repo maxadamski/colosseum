@@ -1,0 +1,29 @@
+phi = 1.61803
+pi = 3.14159
+
+body-color = #fefefe
+body-color-dark = #444
+text-color = #333
+text-color-dark = #fff
+link-color-dark = #5bf
+visited-color-dark = #ccf
+decor-color = text-color
+decor-color-dark = text-color-dark
+
+hgap(x)
+    > *
+        margin-right x
+    > *:last-child
+        margin-right 0
+
+vgap(x)
+    > *
+        margin-bottom x
+    > *:last-child
+        margin-bottom 0
+
+hflex(justify, align)
+    display flex
+    flex-direction row
+    justify-content justify
+    align-items align

@@ -1,0 +1,50 @@
+@import "shared"
+
+html
+    box-sizing border-box
+    font-family sans-serif
+    font-size 18px
+
+*, *::before, *::after
+    box-sizing inherit
+
+h1, h2, h3, h4, h5, h6
+    font-weight normal
+    line-height 1.2
+
+p, ul, ol
+    line-height phi
+
+article
+    max-width 55ch
+
+img, video
+    max-width 100%
+    height auto
+
+hr
+    border none
+    border-top 1px solid decor-color
+
+a
+    text-decoration none
+
+body
+    background body-color
+    color text-color
+    margin 0
+    padding 0
+
+@media (prefers-color-scheme: dark)
+    hr
+        border-color decor-color-dark
+
+    body
+        color text-color-dark
+        background body-color-dark
+
+    a:link
+        color link-color-dark
+
+    a:visited
+        color visited-color-dark
