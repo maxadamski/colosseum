@@ -4,6 +4,7 @@ export default {
     data: () => ({
         tabs: [
             {name: 'Home', url: '/'},
+            {name: 'Help', url: '/help'},
             {name: 'Profile', url: '/profile'},
         ],
     }),
@@ -13,8 +14,9 @@ export default {
 <template lang="pug">
 #inner-app
     header
-        router-link(to='/')
+        router-link.header-left(to='/')
             img(src='../static/logo.png')
+            span AI Colosseum
         nav
             router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
     main
@@ -40,6 +42,12 @@ export default {
     margin 0 auto
     padding 32px 10px
 
+.header-left
+    hflex center center
+    font-size 1.5em
+    font-weight bold
+    color text-color
+    
 nav
     hgap 20px
 
@@ -48,7 +56,8 @@ header
 
 footer
     hflex space-between center
-    height 40px
+    height 60px
+    margin-top 20px
 
 header img
     height 64px

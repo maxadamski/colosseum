@@ -35,6 +35,59 @@ body
     margin 0
     padding 0
 
+button
+    all unset
+    cursor pointer
+
+input, button, .select
+    border 1px solid decor-color
+    border-radius 0.25em
+
+button:hover
+    background #eee
+
+button, select, input
+    margin 0
+    font-size 0.8em
+    color text-color
+    padding 0.5em 0.8em
+
+select
+    appearance none
+    border none
+    background none
+    cursor pointer
+    outline none
+    padding 0.45em 0.8em
+    min-width 15ch
+    max-width 30ch
+
+.select
+    display inline-block
+    max-width 100%
+    align-items center
+
+.select:after
+    content '\25BC'
+    padding-right 0.8em
+
+table
+    border 1px solid decor-color
+    border-radius 0.25em
+    border-collapse collapse
+
+th, td
+    height 30px
+    padding 10px
+    text-align left
+    border-bottom 1px solid decor-color
+
+tr:hover
+    background #F5F5F5
+
+tr:nth-child(even)
+    background #f2f2f2
+
 @media (prefers-color-scheme: dark)
     hr
         border-color decor-color-dark

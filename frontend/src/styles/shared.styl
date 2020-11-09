@@ -7,8 +7,25 @@ text-color = #333
 text-color-dark = #fff
 link-color-dark = #5bf
 visited-color-dark = #ccf
-decor-color = text-color
+decor-color = #aaa
 decor-color-dark = text-color-dark
+
+.w-50
+    min-width 50%
+.w-100
+    width 100%
+.h-100
+    height 100%
+.mb-0
+    margin-bottom 0
+
+.hflex
+    display flex
+    flex-direction row
+
+.vflex
+    display flex
+    flex-direction column
 
 hgap(x)
     > *
@@ -27,3 +44,16 @@ hflex(justify, align)
     flex-direction row
     justify-content justify
     align-items align
+
+.submit-fields > *
+    margin-right 2em
+    margin-bottom 20px
+
+    span
+        margin-bottom 10px
+
+.hlist
+    > *
+        margin-right 5px
+    > *:last
+        margin-right 0
