@@ -3,7 +3,7 @@ export default {
     name: 'Index',
     data: () => ({
         tabs: ['overview', 'rules', 'play', 'team', 'submit'],
-        tab: 'overview',
+        tab: 'submit',
         players: ['Naive Player', 'Smart Player', 'Tricky Player'],
         player: 'Naive Player',
         teamName: 'Foobar',
@@ -14,7 +14,8 @@ export default {
 <template lang="pug">
 div
     h1.mb-0 Pentago
-    i Win in a two-player match
+    h4 Win in a two-player match
+
     nav.tabs
         button(v-for='x in tabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
 
@@ -29,95 +30,101 @@ div
     div(v-if='tab == "play"')
         h3 Interactive Game
 
-        .submit-fields.hflex
+        .hflex.hlist-6
             .vflex
-                span Player
+                h4 Player
                 .select
                     select
                         option(v-for='x in players' :selected='player == x') {{x}}
             .vflex
-                span First player
-                .hflex.hlist
-                    label
+                h4 First player
+                .hflex.hlist-3
+                    label.checkbox
                         input(type='radio' name='gofirst')
-                        |You
-                    label
+                        span You
+                    label.checkbox
                         input(type='radio' name='gofirst')
-                        |Them
+                        span Them
         .widget Custom Game Widget
 
 
     div(v-if='tab == "team"')
-        h3 Team Name
-        .hlist
+        h3 Team
+
+        h4 Team Name
+        .hcombo
             input(type='text' :value='teamName')
             button Save
 
-        h3 Team Members
-        table.w-50
-            tr
-                th User
-                th Status
-                th Actions
-            tr
-                td Max
-                td Leader
-                td
-            tr
-                td Piotr
-                td Member
-                td
-                    button Set Leader
-            tr
-                td Sławek
-                td Invited
-                td
-                    button Cancel Invite
+        h4 Team Members
+        .rounded.w-50
+            table
+                tr
+                    th User
+                    th Status
+                    th Actions
+                tr
+                    td Max
+                    td Leader
+                    td
+                tr
+                    td Piotr
+                    td Member
+                    td
+                        button Set Leader
+                tr
+                    td Sławek
+                    td Invited
+                    td
+                        button Cancel Invite
 
-        h3 Send Invitation
-        .hlist
+        h3 Invitations
+        .hflex.hlist-3.fy-center
+            span <b>Igor</b> invited you to team <b>Fizzbuzz</b>
+            .hcombo
+                button Accept
+                button Delete
+
+        h4 Invite Member
+        .hcombo
             input(type='text' placeholder='User nickname')
             button Send
-
-        h3 Received Invitations
-        .hlist
-            span Team <b>Fizzbuzz</b> with leader <b>Maciej</b>
-            button Accept
 
     div(v-if='tab == "submit"')
         h3 New Submission
 
-        .submit-fields.hflex
+        .hflex.hlist-6
             .vflex
-                span Player code
+                h4 Player code
                 .hflex
                     button Upload
 
             .vflex
-                span Environment
+                h4 Environment
                 .select
                     select
                         option Python3
                         option C++
 
             .vflex
-                span Execution
-                .hflex.hlist
-                    label
+                h4 Execution
+                .hflex.hlist-3
+                    label.checkbox
                         input(type='radio' name='gofirst')
                         |Auto
-                    label
+                    label.checkbox
                         input(type='radio' name='gofirst')
                         |Makefile
 
             .vflex
-                span Actions
-                .hflex.hlist
+                h4 Actions
+                .hflex.hlist-1
                     button Submit
                     button Cancel
 
+
         h3 My Submissions
-        table.w-100
+        table
             tr
                 th #
                 th Date
@@ -173,9 +180,13 @@ div
     button:hover
         background #eee
 
+    button:active
+        background #ddd
+
 .widget
     background gray
     width 100%
     height 500px
+    margin-top u4
     hflex center center
 </style>

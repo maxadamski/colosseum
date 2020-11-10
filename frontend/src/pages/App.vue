@@ -49,7 +49,12 @@ export default {
     color text-color
     
 nav
-    hgap 20px
+    hgap u5
+
+    a
+        color text-color
+        &:hover
+            text-decoration underline
 
 header
     hflex space-between center
