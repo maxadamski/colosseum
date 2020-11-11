@@ -21,8 +21,9 @@ export default {
             router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
     main
         router-view
+    hr
     footer
-        span [Logo left]
+        span img(src='../static/logo.png') 
         small &copy; Copyright 2020
         span [Logo right]
 </template>

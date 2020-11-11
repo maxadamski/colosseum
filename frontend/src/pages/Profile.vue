@@ -4,6 +4,7 @@ export default {
     data: () => ({
         nick: 'Max',
         group: 'I9-2020',
+        type: 'student'
     }),
 }
 </script>
@@ -17,38 +18,40 @@ div
         input(type='text' :value='nick')
         button Save
 
-    h4 Group
-    .hlist
-        .select
-            select
-                option I8-2020
-                option I9-2020
-        button Save
+    div(v-if='type == "student"')
+        h4 Group
+        .hlist
+            .select
+                select
+                    option I8-2020
+                    option I9-2020
+            button Save
 
-    h3 Game-Maker Zone
+    div(v-if='type == "teacher"')
+        h3 Game-Maker Zone
 
-    h4 My Games
-    table.w-50
-        tr
-            th Game
-            th Actions
-        tr
-            td Pentago
-            td.hlist
-                button Edit
-                button Reset
-        tr
-            td Chess
-            td.hlist
-                button Edit
-                button Reset
-                button Activate
-        tr
-            td New game
-            td
-                router-link(to='/edit-game')
-                    button Create
-
+        h4 My Games
+        table.w-50
+            tr
+                th Game
+                th Actions
+            tr
+                td Pentago
+                td.hlist
+                    button Edit
+                    button Reset
+            tr
+                td Chess
+                td.hlist
+                    button Edit
+                    button Reset
+                    button Activate
+            tr
+                td New game
+                td
+                    router-link(to='/edit-game')
+                        button Create
+    //div
     h4 My Groups
     table.w-50
         tr

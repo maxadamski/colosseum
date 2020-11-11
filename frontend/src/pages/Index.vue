@@ -7,14 +7,19 @@ export default {
         players: ['Naive Player', 'Smart Player', 'Tricky Player'],
         player: 'Naive Player',
         teamName: 'Foobar',
+        game: 'Pentago',
+        timeleft: '2 months'
     }),
 }
 </script>
 
 <template lang="pug">
 div
-    h1.mb-0 Pentago
-    i Win in a two-player match
+    h1.mb-0 {{ game }}
+    i Win in a two-player match 
+    br
+    span time left 
+        b {{timeleft }}
     nav.tabs
         button(v-for='x in tabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
 
