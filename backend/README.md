@@ -14,23 +14,16 @@ CREATE USER colosseumdb_admin WITH PASSWORD 'pwd';
 CREATE DATABASE colosseumdb;
 ```
 
-Switch to our database:
+Switch to our database as our new user:
 
 ```
-\c colosseumdb
+\c colosseumdb colosseumdb_admin
 ```
 
 Create the schema using the 'make_schema.sql' file:
 
 ```
 \include database/make_schema.sql
-```
-
-Grant privileges to our user:
-
-```mysql
-GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO colosseumdb_admin;
-GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO colosseumdb_admin;
 ```
 
 ### 3. Create conda environment with necessary requirements:
