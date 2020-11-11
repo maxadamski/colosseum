@@ -1,10 +1,8 @@
-
-# Created by https://www.toptal.com/developers/gitignore/api/osx,pycharm,redis,python
-# Edit at https://www.toptal.com/developers/gitignore?templates=osx,pycharm,redis,python
-
 ### OSX ###
-# General
 .DS_Store
 
 ### PyCharm ###
 .idea/
+
+### Python ###
+__pycache__/

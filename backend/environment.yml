@@ -1,0 +1,15 @@
+name: backend
+channels:
+    - anaconda
+    - conda-forge
+dependencies:
+    - python=3.8
+    - passlib
+    - fastapi
+    - uvicorn
+    - toml
+    - pip
+    - pip:
+      - psycopg2
+      - pugsql
+      - redis
