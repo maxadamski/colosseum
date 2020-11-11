@@ -34,27 +34,29 @@ CREATE TABLE users
     id       SERIAL PRIMARY KEY,
     code     VARCHAR(50) NOT NULL UNIQUE,
     password CHAR(226)   NOT NULL,
-    nickname VARCHAR(50) NOT NULL DEFAULT 'trig_placeholder',
+    nickname VARCHAR(50) NOT NULL UNIQUE,
     class_id INTEGER     REFERENCES classes (id) ON DELETE SET NULL
 );
 
 CREATE TABLE teams
 (
     id        SERIAL PRIMARY KEY,
-    name      VARCHAR(50) NOT NULL,
+    name      VARCHAR(50) NOT NULL UNIQUE,
     leader_id INTEGER     REFERENCES users (id) ON DELETE SET NULL
 );
 
 CREATE TABLE team_users
 (
-    team_id INTEGER REFERENCES teams (id) ON DELETE CASCADE,
-    user_id INTEGER REFERENCES users (id) ON DELETE CASCADE
+    team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
+    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+    unique (team_id, user_id)
 );
 
 CREATE TABLE team_invites
 (
+    team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE
+    unique (team_id, user_id)
 );
 
 CREATE TABLE environments
@@ -100,21 +102,25 @@ CREATE TABLE results
     second_submission_id INTEGER   REFERENCES submissions (id) ON DELETE SET NULL
 );
 
-DROP PROCEDURE IF EXISTS create_user_team(in_id int, in_nickname varchar);
+DROP PROCEDURE IF EXISTS create_user_team(user_id int, user_nickname varchar);
 
-create procedure create_user_team(in_id int,
-                                             in_nickname varchar)
+create or replace procedure create_user_team(user_id int, user_nickname varchar)
 as
 $BODY$
 DECLARE
-    new_team_id in_id%TYPE;
+    new_team_id user_id%TYPE;
+    team_idx    integer := 1;
 begin
+    while ((SELECT id FROM teams WHERE name LIKE user_nickname::text || ' team ' || team_idx::text) IS NOT NULL)
+        loop
+            team_idx := team_idx + 1;
+        end loop;
     INSERT INTO teams(name, leader_id)
-    VALUES (in_nickname::text || ' team', in_id)
+    VALUES (user_nickname::text || ' team ' || team_idx::text, user_id)
     RETURNING id into new_team_id;
 
     INSERT INTO team_users(team_id, user_id)
-    VALUES (new_team_id, in_id);
+    VALUES (new_team_id, user_id);
 end;
 $BODY$
     language plpgsql;
@@ -123,9 +129,6 @@ DROP FUNCTION IF EXISTS create_initial_team;
 CREATE FUNCTION create_initial_team() RETURNS TRIGGER AS
 $BODY$
 BEGIN
-    UPDATE users
-    set nickname=new.code
-    where id = new.id;
     call create_user_team(new.id, new.code);
     RETURN null;
 END;

@@ -64,7 +64,7 @@ async def shutdown():
 
 @app.post('/login/user')
 async def login(login: str = Body(...), password: str = Body(...)):
-    user = db.get_user(code=login)
+    user = db.get_user_by_code(code=login)
     if not user or not verify_password(password, user['password']):
         raise BAD_LOGIN
     key = make_session_token()
@@ -78,29 +78,31 @@ async def login(login: str = Body(...), password: str = Body(...)):
 #
 
 @app.post('/user')
-async def create_user(code: str = Body(...), password: str = Body(...)):
+async def create_user(code: str = Body(...), password: str = Body(...), nickname: str = Body(...),
+                      class_id: str = Body(...)):
     hashed = hashed_password(password)
-    db.insert_user(code=code, password=hashed)
+    db.insert_user(code=code, password=hashed, nickname=nickname, class_id=class_id)
 
 
 @app.get('/users/me')
 async def read_user(session=Depends(user_session)):
-    return db.get_user(code=session['login'])
+    return db.get_user_by_code(code=session['login'])
 
 
 class UserPatch(BaseModel):
-    nickname: str = None
+    code: str = None
     password: str = None
-    class_name: str = None
+    nickname: str = None
+    class_id: str = None
 
 
 @app.patch('/users/me')
 async def update_user(data: UserPatch, session=Depends(user_session)):
-    new_nickname, new_password, new_class_name = data.nickname, data.password, data.class_name
-    new_class_id = db.get_class(name=new_class_name)
+    new_code, new_password, new_nickname, new_class_id = data.code, data.password, data.nickname, data.class_id
     user_id = session['user_id']
     hashed = hashed_password(new_password) if new_password is not None else None
-    db.update_user(user_id=user_id, new_nickname=new_nickname, new_password=hashed, new_class_id=new_class_id)
+    db.update_user(user_id=user_id, new_code=new_code, new_nickname=new_nickname, new_password=hashed,
+                   new_class_id=new_class_id)
     if login is not None or new_password is not None:
         delete_session(admin_sessions, session['login'])
 
@@ -174,12 +176,12 @@ async def update_user_team(data: TeamPatch, session=Depends(user_session)):
 
 
 @app.post('/users/me/team/invite')
-async def invite_to_user_team(invited_user_code: str = Body(..., embed=True), session=Depends(user_session)):
+async def invite_to_user_team(user_nickname: str = Body(..., embed=True), session=Depends(user_session)):
     user_id = session['user_id']
     user_team = db.get_user_team(user_id=user_id)
     if user_id != user_team['leader_id']:
         raise FORBIDDEN
-    invited_user = db.get_user(code=invited_user_code)
+    invited_user = db.get_user_by_nickname(nickname=user_nickname)
     db.invite_user_to_team(user_id=invited_user['id'], team_id=user_team['id'])
 
 
@@ -193,7 +195,7 @@ async def remove_from_user_team(removed_user_id: str = Body(..., embed=True), se
 
 
 @app.delete('/users/me/team/invite')
-async def remove_user_team_invite(removed_invite_user_id: str = Body(..., embed=True), session=Depends(user_session)):
+async def cancel_user_team_invite(removed_invite_user_id: str = Body(..., embed=True), session=Depends(user_session)):
     user_id = session['user_id']
     user_team = db.get_user_team(user_id=user_id)
     if user_id != user_team['leader_id']:

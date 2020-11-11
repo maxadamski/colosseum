@@ -1,5 +1,5 @@
 -- :name get_teams :many
-select id, name, leader_id
+select *
 from teams;
 
 -- :name get_team :one
