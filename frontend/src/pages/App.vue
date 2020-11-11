@@ -21,11 +21,11 @@ export default {
             router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
     main
         router-view
-    hr
+    
     footer
         img(src='../static/logo.png') 
         small &copy; Copyright 2020
-        span [Logo right]
+        span [Logo PUT]
 </template>
 
 <style lang="stylus">
@@ -64,7 +64,13 @@ footer
     hflex space-between center
     height 60px
     margin-top 20px
+    padding-top 20px 
+    border-top solid grey
+    border-width thin
 
 header img
+    height 64px
+
+footer img
     height 64px
 </style>

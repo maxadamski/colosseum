@@ -7,6 +7,20 @@ export default {
         players: ['Naive Player', 'Smart Player', 'Tricky Player'],
         player: 'Naive Player',
         teamName: 'Foobar',
+        teamMembers: [
+            {name: 'Max', leader: true, awaiting: false, id: '1'},
+            {name: 'Piotr', leader: false, awaiting: false, id: '2'},
+            {name: 'Maciej', leader: false, awaiting: false, id: '3'},
+            {name: 'Sławek', leader: false, awaiting: true, id: '4'},
+        ],
+        invitations: [
+            {inviting:"Igor", team:"FizzBuzz", id: '1'},
+        ],
+        submissions: [
+            {date:"2020-10-11 10:15", env:"Python 3", state: "Ok", score: "80%", id:"1"},
+            {date:"2020-10-11 10:20", env:"C++", state: "buil failed", score: "n/a", id:"2"},
+            {date:"2020-10-11 23:12", env:"C++", state: "Ok", score: "78%", id:"3"},
+        ],
         game: 'Pentago',
         timeleft: '2 months'
     }),
@@ -18,7 +32,7 @@ div
     h1.mb-0 {{ game }}
     h4 Win in a two-player match
     span time left 
-        b {{timeleft }}
+        b {{ timeleft }}
 
 
     nav.tabs
@@ -68,24 +82,25 @@ div
                     th User
                     th Status
                     th Actions
-                tr
-                    td Max
-                    td Leader
-                    td
-                tr
-                    td Piotr
-                    td Member
-                    td
+                tr(v-for="member in teamMembers" v-bind:key="member.id")
+                    td {{ member.name}}
+
+                    td(v-if="member.leader") Leader 
+                    td(v-else-if="!member.awaiting") Member
+                    td(v-else) Invited
+
+                    td(v-if="!member.leader && !member.awaiting") 
                         button Set Leader
-                tr
-                    td Sławek
-                    td Invited
-                    td
+                    td(v-else-if="member.awaiting")
                         button Cancel Invite
+                    td(v-else) 
 
         h3 Invitations
         .hflex.hlist-3.fy-center
-            span <b>Igor</b> invited you to team <b>Fizzbuzz</b>
+            span(v-for="invitation in invitations" v-bind:key="invitation.id") 
+                b {{ invitation.inviting }} 
+                span invited you to team 
+                b {{ invitation.team }}
             .hcombo
                 button Accept
                 button Delete
@@ -136,27 +151,12 @@ div
                 th Env
                 th State
                 th Score
-            tr
-                td 1
-                td 2020-10-11 10:15
-                td Python3
-                td ok
-                td 80%
-            tr
-                td 2
-                td 2020-10-11 10:20
-                td C++
-                td bulid failed
-                td n/a
-            tr
-                td 2
-                td 2020-10-10 23:12
-                td C++
-                td ok
-                td 78%
-
-
-
+            tr(v-for="sub in submissions" v-bind:key="sub.id")
+                td {{ sub.id }}
+                td {{ sub.date }}
+                td {{ sub.env }}
+                td {{ sub.state }}
+                td {{ sub.score }}
 </template>
 
 <style lang="stylus" scoped>

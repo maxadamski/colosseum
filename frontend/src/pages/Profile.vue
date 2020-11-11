@@ -4,7 +4,17 @@ export default {
     data: () => ({
         nick: 'Max',
         group: 'I9-2020',
-        type: 'student'
+        type: 'teacher',
+        groups: [
+            {name: 'I1-2020', id: '1'},
+            {name: 'I2-2020', id: '2'},
+            {name: 'I3-2020', id: '3'},
+            {name: 'I4-2020', id: '4'}
+        ],
+        gamess: [
+            {name: 'Pentago', active:true, id: '1'},
+            {name: 'Chess', active:false, id: '2'},
+        ],
     }),
 }
 </script>
@@ -26,8 +36,7 @@ div
         .hcombo
             .select
                 select
-                    option I8-2020
-                    option I9-2020
+                    option(v-for="group in groups" v-bind:key="groups.id") {{ group.name }}
             button Save
 
     div(v-if='type == "teacher"')
@@ -41,16 +50,23 @@ div
                     th Game
                     th Actions
                 tr
-                    td Pentago
+                    td Naive Player
                     td.hcombo
-                        button Edit
-                        button Reset
+                        button Rename
+                        button Delete
                 tr
-                    td Chess
+                    td Smart Player
+                    td.hcombo
+                        button Rename
+                        button Delete
+                
+                tr(v-for="game in games" v-bind:key="game.id")
+                    td {{ game.name }}
                     td.hcombo
                         button Edit
                         button Reset
-                        button Activate
+                        
+
                 tr
                     td New game
                     td.hcombo
@@ -63,18 +79,13 @@ div
                 tr
                     th Name
                     th Actions
-                tr
-                    td I8-2020
+                tr(v-for="group in groups" v-bind:key="group.id")
+                    td {{ group.name }}
                     td.hcombo
                         button Export
                         button Rename
-                        button Delete
-                tr
-                    td I9-2020
-                    td.hcombo
-                        button Export
-                        button Rename
-                        button Delete
+                        button Delete                  
+              
                 tr
                     td New group
                     td.hcombo
