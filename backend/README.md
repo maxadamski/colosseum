@@ -1,11 +1,11 @@
 # AI Colosseum Backend App
 
-1. Install dependencies:
+#### 1. Install dependencies:
 
 * Anaconda
 * PostgreSQL
 
-2. Create and configure the database and user:
+#### 2. Create and configure the database and user:
 
 Using the default 'postgres' database and default user:
 
@@ -33,23 +33,25 @@ GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO colosseumdb_admin;
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO colosseumdb_admin;
 ```
 
-3. Create conda environment with necessary requirements:
+#### 3. Create conda environment with necessary requirements:
 
 ```
 conda env create -f environment.yml
 conda activate backend
 ```
 
-4. Start redis instances:
+#### 4. Start the API:
+
+Create redis instances:
 
 ```
 make redis
 ```
 
-5. Start the API:
+Run the api with uvicorn:
 
 ```
 make serve
 ```
 
-6. Test the API using the generated swagger docs: http://127.0.0.1:8000/docs# 
+Test the API using the generated swagger docs: http://127.0.0.1:8000/docs# 
