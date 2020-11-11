@@ -23,7 +23,7 @@ export default {
         router-view
     hr
     footer
-        span img(src='../static/logo.png') 
+        img(src='../static/logo.png') 
         small &copy; Copyright 2020
         span [Logo right]
 </template>
@@ -50,7 +50,12 @@ export default {
     color text-color
     
 nav
-    hgap 20px
+    hgap u5
+
+    a
+        color text-color
+        &:hover
+            text-decoration underline
 
 header
     hflex space-between center

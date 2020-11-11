@@ -43,6 +43,7 @@ const router = new VueRouter({
         { path: '/', component: () => import('./pages/Index.vue') },
         { path: '/profile', component: () => import('./pages/Profile.vue') },
         { path: '/edit-game', component: () => import('./pages/EditGame.vue') },
+        { path: '/help', component: () => import('./pages/Help.vue') },
         { path: '/404', component: () => import('./pages/NotFound.vue') },
         { path: '*', redirect: '/404' },
     ],

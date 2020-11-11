@@ -10,14 +10,66 @@ visited-color-dark = #ccf
 decor-color = #aaa
 decor-color-dark = text-color-dark
 
+units = 0 4px 7px 11px 18px 29px 47px
+sizes = 14px 18px 23px 29px 37px 47px
+u0 = units[0]
+u1 = units[1]
+u2 = units[2]
+u3 = units[3]
+u4 = units[4]
+u5 = units[5]
+u6 = units[6]
+s1 = sizes[0]
+s2 = sizes[1]
+s3 = sizes[2]
+s4 = sizes[3]
+s5 = sizes[4]
+s6 = sizes[5]
+r1 = 3px
+
+h1
+    margin u5 0 u4 0
+    font-size s5
+h2
+    margin u4 0 u3 0
+    font-size s4
+h3
+    margin u3 0 u3 0
+    font-size s3
+h4
+    margin u3 0 u3 0
+    font-size s2
+h5
+    margin u2 0 u2 0
+    font-size s2
+p
+    margin u2 0
+    font-size s2
+
 .w-50
-    min-width 50%
+    width 50%
 .w-100
     width 100%
+.w-a
+    width auto
+.h-50
+    height 50%
 .h-100
     height 100%
+.h-a
+    width auto
+
+.mx-a
+    margin-left auto
+    margin-right auto
+.my-a
+    margin-top auto
+    margin-bottom auto
+
 .mb-0
     margin-bottom 0
+.fy-center
+    align-items center
 
 .hflex
     display flex
@@ -26,6 +78,10 @@ decor-color-dark = text-color-dark
 .vflex
     display flex
     flex-direction column
+
+.rounded
+    border 1px solid decor-color
+    border-radius r1
 
 hgap(x)
     > *
@@ -45,15 +101,24 @@ hflex(justify, align)
     justify-content justify
     align-items align
 
-.submit-fields > *
-    margin-right 2em
-    margin-bottom 20px
 
-    span
-        margin-bottom 10px
-
-.hlist
+.hcombo
+    white-space nowrap
     > *
-        margin-right 5px
-    > *:last
-        margin-right 0
+        border-radius 0
+    > *:not(:last-child)
+        border-right none
+    > *:first-child
+        border-top-left-radius r1
+        border-bottom-left-radius r1
+    > *:last-child
+        border-top-right-radius r1
+        border-bottom-right-radius r1
+
+
+for x, i in units
+    .hlist-{i}
+        hgap(x)
+
+    .vlist-{i}
+        vgap(x)

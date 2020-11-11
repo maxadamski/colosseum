@@ -2,7 +2,7 @@
 
 html
     box-sizing border-box
-    font-family sans-serif
+    font-family 'Open Sans', 'Helvetica', sans-serif
     font-size 18px
 
 *, *::before, *::after
@@ -41,52 +41,98 @@ button
 
 input, button, .select
     border 1px solid decor-color
-    border-radius 0.25em
+    border-radius r1
 
-button:hover
-    background #eee
+button, select
+    background body-color
+
+    &:hover
+        background #eee
+
+    &:active
+        background #ddd
+
+[type=file]
+    position absolute
+    cursor pointer
+    width 1px
+    opacity 0
+
+    + label
+        border 1px solid decor-color
+        border-radius r1
+        cursor pointer
+        display inline-block
+        font-size s1
+        padding u2 u3
+
+    &:hover + label
+        background #eee
+
+    &:active + label
+        background #ddd
+
+input
+    word-wrap break-word
+    word-break break-all
 
 button, select, input
     margin 0
-    font-size 0.8em
+    padding u2 u3
+
+button, select, input, .select, .checkbox
+    max-height 32px
+    white-space nowrap
+    font-size s1
     color text-color
-    padding 0.5em 0.8em
 
 select
-    appearance none
+    outline none
     border none
+    appearance none
     background none
     cursor pointer
-    outline none
-    padding 0.45em 0.8em
     min-width 15ch
     max-width 30ch
 
 .select
+    white-space nowrap
     display inline-block
     max-width 100%
     align-items center
 
 .select:after
-    content '\25BC'
-    padding-right 0.8em
+    content '\1F863'
+    padding-right 1ch
+
+.checkbox
+    padding u2 0
+    hflex space-between center
+    input
+        margin-right 0.5ch
+
 
 table
-    border 1px solid decor-color
-    border-radius 0.25em
     border-collapse collapse
+    width 100%
+
+tr
+    height 40px
+    &:not(:last-of-type)
+        border-bottom 1px solid decor-color
 
 th, td
-    height 30px
-    padding 10px
+    padding u2 u3
     text-align left
-    border-bottom 1px solid decor-color
+    vertical-align center
+    font-size 15px
 
-tr:hover
-    background #F5F5F5
+td button
+    font-size 13px
+    padding u1 u2
 
 tr:nth-child(even)
-    background #f2f2f2
+    background #f8f8f8
 
 @media (prefers-color-scheme: dark)
     hr
