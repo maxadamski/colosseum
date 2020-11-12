@@ -222,6 +222,12 @@ async def login(login: str = Body(...), password: str = Body(...)):
 # Admin endpoints
 #
 
+@app.post('/admin')
+async def create_admin(login: str = Body(...), password: str = Body(...)):
+    hashed = hashed_password(password)
+    db.insert_admin(login=login, password=hashed)
+
+
 @app.get('/admins/me')
 async def read_admin(session=Depends(admin_session)):
     return db.get_admin(login=session['login'])

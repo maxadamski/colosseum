@@ -8,3 +8,8 @@ update admins
 set login    = coalesce(:new_login, login),
     password = coalesce(:new_password, password)
 where id = :admin_id;
+
+-- :name insert_admin
+insert into admins (login, password)
+values (:login, :password)
+returning id;
