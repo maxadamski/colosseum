@@ -4,26 +4,39 @@
 
 * Anaconda
 * PostgreSQL
+* Redis-server
 
 ### 2. Create and configure the database and user:
 
-Using the default 'postgres' database and default user:
+Create a new user for our database using psql. For the password choose 'pwd':
 
-```mysql
-CREATE USER colosseumdb_admin WITH PASSWORD 'pwd';
-CREATE DATABASE colosseumdb;
+```bash
+createuser -P colosseumdb_admin
 ```
 
-Switch to our database as our new user:
+Create the database for our user:
+
+```bash
+createdb -O colosseumdb_admin colosseumdb
+```
+
+Connect to our database as a default postgres user:
 
 ```
-\c colosseumdb colosseumdb_admin
+psql -d colosseum_db
 ```
 
-Create the schema using the 'make_schema.sql' file:
+Create the schema using the 'make_schema.sql' file (it may be necessary to use the absolute path of the make_schema.sql file)
 
 ```
 \include database/make_schema.sql
+```
+
+Grant privileges to our colosseumdb admin user:
+
+```mysql
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO colosseumdb_admin; 
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO colosseumdb_admin;
 ```
 
 ### 3. Create conda environment with necessary requirements:

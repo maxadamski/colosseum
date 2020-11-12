@@ -10,6 +10,6 @@ dependencies:
     - toml
     - pip
     - pip:
-      - psycopg2
+      - psycopg2-binary
       - pugsql
       - redis
