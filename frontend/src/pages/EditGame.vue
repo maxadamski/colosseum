@@ -2,8 +2,18 @@
 export default {
     name: 'EditGame',
     data: () => ({
+        languages: [
+            {name: 'C++', id: '1'},
+            {name: 'Python3', id: '2'},
+        ],
+       players: [
+            {name: 'Naive Player', id: '1'},
+            {name: 'Smart Player', id: '2'},
+        ],
+
     }),
 }
+
 </script>
 
 <template lang="pug">
@@ -52,8 +62,7 @@ div
             h4 Environment
             .select
                 select
-                    option Python3
-                    option C++
+                    option(v-for="language in languages" v-bind:key="languages.id") {{ language.name }}
                 label
 
         .vflex
@@ -73,13 +82,8 @@ div
             tr
                 th Name
                 th Actions
-            tr
-                td Naive Player
-                td.hcombo
-                    button Rename
-                    button Delete
-            tr
-                td Smart Player
+            tr(v-for="player in players" v-bind:key="players.id")
+                td {{ player.name }}
                 td.hcombo
                     button Rename
                     button Delete
