@@ -10,7 +10,6 @@ int main(int argc, char **argv) {
 	while (1) {
 		if ((size = msend_str(f, msg, tag)) < 0) perror("error: ");
 		printf("--> %.*s [tag %d, size %d]\n", size, msg, tag, size);
-		usleep(10);
 	}
 	close(f);
 	return 0;
