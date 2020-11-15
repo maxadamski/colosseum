@@ -26,27 +26,27 @@ div
     div
         div
             h5 Overview file (markdown)
-            div
-                input(type='file' id='overview-rules')
-                label(for='overview-rules') Upload
+            label.input-file
+                input(type='file')
+                span Upload
         div
             h5 Rule file (markdown)
-            div
-                input(type='file' id='doc-rules')
-                label(for='doc-rules') Upload
+            label.input-file
+                input(type='file')
+                span Upload
         div
             h5 Game widget (html)
-            div
-                input(type='file' id='game-widget')
-                label(for='game-widget') Upload
+            label.input-file
+                input(type='file')
+                span Upload
 
     h3 Game Engine
     .submit-fields.hflex.hlist-6
         .vflex
             h4 Engine code
-            div
-                input(type='file' id='engine-code')
-                label(for='engine-code') Upload
+            label.input-file
+                input(type='file')
+                span Upload
 
         .vflex
             h4 Environment
@@ -59,10 +59,10 @@ div
         .vflex
             h4 Execution
             .hflex.hlist-3
-                label.checkbox
+                label.input-radio
                     input(type='radio' name='gofirst')
                     span Auto
-                label.checkbox
+                label.input-radio
                     input(type='radio' name='gofirst')
                     span Makefile
 

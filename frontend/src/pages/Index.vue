@@ -39,10 +39,10 @@ div
             .vflex
                 h4 First player
                 .hflex.hlist-3
-                    label.checkbox
+                    label.input-radio
                         input(type='radio' name='gofirst')
                         span You
-                    label.checkbox
+                    label.input-radio
                         input(type='radio' name='gofirst')
                         span Them
         .widget Custom Game Widget
@@ -109,12 +109,12 @@ div
             .vflex
                 h4 Execution
                 .hflex.hlist-3
-                    label.checkbox
+                    label.input-radio
                         input(type='radio' name='gofirst')
-                        |Auto
-                    label.checkbox
+                        span Auto
+                    label.input-radio
                         input(type='radio' name='gofirst')
-                        |Makefile
+                        span Makefile
 
             .vflex
                 h4 Actions
@@ -124,34 +124,38 @@ div
 
 
         h3 My Submissions
-        table
+        table.submission-table
             tr
                 th #
                 th Date
                 th Env
                 th State
                 th Score
+                th Actions
             tr
-                td 1
+                td
+                    b.tooltip(title="This is your team's primary submission. Your final grade will depend on the performance of this submission") 1*
                 td 2020-10-11 10:15
                 td Python3
                 td ok
                 td 80%
+                td
             tr
                 td 2
                 td 2020-10-11 10:20
                 td C++
                 td bulid failed
                 td n/a
+                td
+                    button Set Primary
             tr
                 td 2
                 td 2020-10-10 23:12
                 td C++
                 td ok
                 td 78%
-
-
-
+                td
+                    button Set Primary
 </template>
 
 <style lang="stylus" scoped>
@@ -189,4 +193,7 @@ div
     height 500px
     margin-top u4
     hflex center center
+
+.submission-table > tr > :nth-child(2)
+    width 20ch
 </style>
