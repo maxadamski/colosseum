@@ -7,13 +7,14 @@ from select import select
 def open(f, mode):
     if mode == 'r': return os.open(f, os.O_RDONLY)
     if mode == 'w': return os.open(f, os.O_WRONLY)
-    raise Exception(f'unknown mode {mode}')
+    panic(f'unknown mode {mode}')
 
 def close(f):
     os.close(f)
 
 def panic(*args, file=sys.stderr, **kwargs):
     print(*args, file=file, **kwargs)
+    sys.exit(1)
 
 def send(f, data, tag=0):
     size = len(data)
