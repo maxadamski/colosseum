@@ -1,0 +1,3 @@
+api_token = "password"
+force_https = false
+allow_origins = [ "https://localhost:8000" ]
