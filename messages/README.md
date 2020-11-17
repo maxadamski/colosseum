@@ -4,11 +4,51 @@
 
 ```
 message = { size , tag , payload }
-message = { size , tag , n , offset_1 ... offset_n , toffset_1 ... toffset_n , type_1 ... type_n , data_1 ... data_n }
-type = { str, n } | { arr, prim, n, d_1 ... d_n }
-prim = bool | i8 | i16 | i32 | i64 | u8 | u16 | u32 | u64
-n d_1 ... d_n : u32
+message = { size , tag , n , type_1 ... type_n , data_1 ... data_n }
+type = prim | arr prim n d_1 ... d_n
+prim = bool | i8 | i32 | u8 | u32 | f32 | f64
 ```
+
+## Binary interface
+
+```
+Size = XX XX XX XX
+Tag  = XX 
+Argc = XX
+Type = ...
+Data = ...
+
+type      | binary
+----------|----------
+u8        | 0000 0000
+u32       | 0000 0001
+i8        | 0000 0010
+i32       | 0000 0011
+f32       | 0000 0100
+f64       | 0000 0101
+bool      | 0000 0110
+...       | ...
+          | 1000 ----
+arr T N   | 1NNN TTTT [ dim1 ] 
+          | 1NNN TTTT [ dim1 ] [ dim2 ]
+          | 1NNN TTTT ...
+```
+
+/*
+
+type message format
+
+	Aliases
+	
+	C   = u8
+	U   = u32
+	I   = i32
+	F   = f32
+	S   = v:u8:auto
+	D:_ = v:u8:_
+
+	When scanning vector or array dimensions, pointers to the dimensions must be passed in order **after** the pointer to the array!
+*/
 
 
 ## C message API
@@ -57,5 +97,9 @@ board_size() -> i8
 do_move(x y r: i8)
 commit_move(x y r: i8)
 undo_move()
+
+u32 n_states;
+i8 states[36*36];
+recv1(f, 1, "%a:i8:%u32:36", &states, %n_states)
 ```
 

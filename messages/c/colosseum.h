@@ -1,55 +1,65 @@
 #pragma once
 
+#include "utils.h"
+
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 
 #include <unistd.h>
 #include <stdint.h>
 #include <fcntl.h>
 
-typedef int8_t tag_t;
-typedef int32_t msize_t;
+typedef int8_t   Tag;
 
-msize_t mrecv_size = 0;
+//msize_t mrecv_size = 0;
 
-msize_t msend(int f, void const *data, msize_t size, tag_t tag);
-msize_t msend_str(int f, char const *data, tag_t tag);
-msize_t msend_int(int f, int32_t data, tag_t tag);
-msize_t mrecv(int f, void *data, msize_t size, tag_t *tag);
-tag_t mrecv2(int f, void *data, msize_t size);
+typedef enum {
+	T_U8   = 0x00, T_U32  = 0x01, T_I8   = 0x02, T_I32 = 0x03,
+	T_F32  = 0x04, T_F64  = 0x05, T_BOOL = 0x06,
+	T_ARR  = 0x10,
+} Arg_Type;
 
-inline msize_t msend(int f, void const *data, msize_t size, tag_t tag) {
-	// TODO: if machine is big endian convert bytes from big to little endian
-	write(f, &size, sizeof(size));
-	write(f, &tag, sizeof(tag));
-	return size > 0 ? write(f, data, size) : 0;
-}
+extern u32 const type_size[];
 
-inline msize_t msend_str(int f, char const *data, tag_t tag) {
-	msize_t size = strlen(data);
-	return msend(f, data, size, tag);
-}
+extern Arg_Type const format_type[];
 
-inline msize_t msend_int(int f, int32_t data, tag_t tag) {
-	return msend(f, &data, sizeof(data), tag);
-}
+extern u32 const format_size[];
 
-inline msize_t mrecv(int f, void *data, msize_t size, tag_t *tag) {
-	// TODO: if machine is big endian convert bytes from little to big endian
-	msize_t message_size;
-	read(f, &message_size, sizeof(message_size));
-	if (message_size > size) {
-		fprintf(stderr, "colosseum error: incoming message size (%d) exceeded maximum buffer size (%d)\n", message_size, size);
-		exit(1);
-	}
-	read(f, tag, sizeof(*tag));
-	return size > 0 ? read(f, data, message_size) : 0;
-}
+/** Typed send
+ *
+ *
+ */
+i32 msendf(int f, Tag tag, char const *fmt, ...);
 
-inline tag_t mrecv2(int f, void *data, msize_t size) {
-	tag_t tag;
-	mrecv_size = mrecv(f, data, size, &tag);
-	return tag;
-}
+/** Typed recv waits for message of a given tag
+ *
+ *
+ */
+i32 mrecvf(int f, Tag tag, char const *fmt, ...);
 
+/** Low-level send (without splitting arguments), returns bytes written
+ *
+ *
+ */
+i32 msend(int f, Tag tag, void const *data, u32 size);
+
+
+/** Low-level function to receive any message
+ *  @param tag - incoming message tag
+ *  @param buffer - incoming message payload
+ *  @param size - maximum buffer size
+ *  @returns buffer size
+ */
+i32 mrecv(int f, Tag *tag, void *data, u32 size);
+
+
+/**
+ *  Low-level function to receive a message with a given tag
+ *  @param tag - expected message tag
+ *  @param buffer - incoming message payload
+ *  @param size - maximum buffer size
+ *  @returns buffer size
+ */
+i32 mrecvt(int f, Tag tag, void *data, u32 size);
