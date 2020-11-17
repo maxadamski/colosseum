@@ -1,18 +1,27 @@
 #include "colosseum.h"
-#include "stdio.h" 
-#include "stdlib.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
 int main(int argc, char **argv) {
 	int f = open(argv[1], O_RDONLY);
-	msize_t const buf_size = 1024;
-	char msg[buf_size];
-	tag_t tag;
-	msize_t size;
+	u32 const max_size = 1024;
+	char msg[max_size];
+	u32 msg_size;
+	i32 number;
+
 	while (1) {
-		if ((size = mrecv(f, msg, buf_size, &tag)) < 0) perror("error: ");
-		if (!size) continue;
-		printf("<-- %.*s [tag %d, size %d]\n", size, msg, tag, size);
+		number = 0;
+		msg[0] = '\0';
+
+		timespec t0 = gettime();
+		if (mrecvf(f, 42, "%I %u[%]", &number, msg, &msg_size) < 0) continue;
+		timespec t1 = gettime();
+		assert(number == 1024);
+		assert(strcmp(msg, "Hello, World!") != 0);
+		printf("recv (%ldns elapsed)\n", deltatime(t0, t1));
 	}
+
 	close(f);
 	return 0;
 }
