@@ -10,14 +10,14 @@ typedef enum {
 } PentagoError;
 
 typedef struct {
-    // boad_size of N denotes a board with NxN fields
-    int32_t board_size;
-
     // board stored as string where:
     //     '.' is an empty field
     //     'B' is a black stone
     //     'W' is a white stone
     char *board;
+
+    // boad_size of N denotes a board with NxN fields
+    uint8_t board_size;
 
     // 'B' for blacks turn, 'W' for whites turn
     char current_player;
@@ -29,18 +29,29 @@ typedef struct {
     char winner;
 } Pentago;
 
-typedef struct {
-    int32_t i;
-    int32_t j;
-    int32_t tile;
-    char rotation;
-} PentagoMove;
+#define ROTATION_TOP_LEFT_CW   0b000
+#define ROTATION_TOP_LEFT_CCW  0b001
+#define ROTATION_TOP_RIGHT_CW  0b010
+#define ROTATION_TOP_RIGHT_CCW 0b011
+#define ROTATION_BOT_LEFT_CW   0b100
+#define ROTATION_BOT_LEFT_CCW  0b101
+#define ROTATION_BOT_RIGHT_CW  0b110
+#define ROTATION_BOT_RIGHT_CCW 0b111
 
-PentagoError pentago_create(Pentago *game, int32_t size);
+typedef struct {
+    int32_t count;
+    uint8_t *i;
+    uint8_t *j;
+    uint8_t *rotation;
+} PentagoMoves;
+
+PentagoError pentago_create(Pentago *game, uint8_t size);
 void pentago_destroy(Pentago *game);
 char other_player(char player);
-char * board_get(Pentago *game, int32_t i, int32_t j);
-PentagoError make_move(Pentago *game, int32_t i, int32_t j, int32_t tile, char rotation);
+char * board_get(Pentago *game, uint8_t i, uint8_t j);
+PentagoError make_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation);
 char get_winner(Pentago *game);
-
+void board_print(Pentago *game);
+PentagoMoves get_available_moves(Pentago *game);
+void free_moves(PentagoMoves *moves);
 #endif // PENTAGO_INCLUDE

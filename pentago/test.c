@@ -111,7 +111,7 @@ int main() {
     {
         Pentago game = {0};
         pentago_create(&game, 10);
-        make_move(&game, 3, 2, 0, 'R');
+        make_move(&game, 3, 2, ROTATION_TOP_LEFT_CW);
         char res = *board_get(&game, 2, 1);
         pentago_destroy(&game);
         
@@ -120,7 +120,7 @@ int main() {
     {
         Pentago game = {0};
         pentago_create(&game, 10);
-        make_move(&game, 1, 5, 1, 'L');
+        make_move(&game, 1, 5, ROTATION_TOP_RIGHT_CCW);
         char res = *board_get(&game, 4, 6);
         pentago_destroy(&game);
         
@@ -136,9 +136,9 @@ int main() {
             "......"
             "......"
             "......";
-        int32_t count = 0;
-        PentagoMove *moves = get_available_moves(&game, &count);
-        free(moves);
+        PentagoMoves moves = get_available_moves(&game);
+        int32_t count = moves.count;
+        free_moves(&moves);
         TEST(count == 6*6*8, "empty board available moves");
     }
     {
@@ -151,14 +151,12 @@ int main() {
             "BBBWWW"
             "BBBWWW"
             "WBBWWB";
-        int32_t count = 0;
-        PentagoMove *moves = get_available_moves(&game, &count);
-        int test = (count == 8 &&
-                    moves[3].i == 2 &&
-                    moves[3].j == 4 &&
-                    moves[3].tile == 1 &&
-                    moves[3].rotation == 'R');
-        free(moves);
+        PentagoMoves moves = get_available_moves(&game);
+        int test = moves.count == 8 &&
+                   moves.i[3] == 2 &&
+                   moves.j[3] == 4 &&
+                   moves.rotation[3] == 3;
+        free_moves(&moves);
         TEST(test, "near full board available moves");
     }
 
