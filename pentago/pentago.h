@@ -9,6 +9,11 @@ typedef enum {
     PERR_ILLEGAL_MOVE = 2,
 } PentagoError;
 
+typedef enum {
+    MSG_NONE      = 0,
+    MSG_MAKE_MOVE = 1,
+} PentagoMsg;
+
 typedef struct {
     // board stored as string where:
     //     '.' is an empty field
@@ -44,6 +49,8 @@ typedef struct {
     uint8_t *j;
     uint8_t *rotation;
 } PentagoMoves;
+
+// TODO(piotr): document
 
 PentagoError pentago_create(Pentago *game, uint8_t size);
 void pentago_destroy(Pentago *game);
