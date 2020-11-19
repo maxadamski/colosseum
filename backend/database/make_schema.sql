@@ -8,13 +8,10 @@ DROP TABLE IF EXISTS team_invites CASCADE;
 DROP TABLE IF EXISTS environments CASCADE;
 DROP TABLE IF EXISTS games CASCADE;
 DROP TABLE IF EXISTS submissions CASCADE;
+DROP TABLE IF EXISTS team_primary_submissions CASCADE;
 DROP TABLE IF EXISTS results CASCADE;
 
-DROP TYPE IF EXISTS status;
-DROP TYPE IF EXISTS exec_type;
-
-CREATE TYPE status AS ENUM ('success', 'error');
-CREATE TYPE exec_type AS ENUM ('single', 'makefile');
+DROP TYPE IF EXISTS STATUS;
 
 CREATE TABLE admins
 (
@@ -26,7 +23,7 @@ CREATE TABLE admins
 CREATE TABLE classes
 (
     id   SERIAL PRIMARY KEY,
-    name VARCHAR(10) NOT NULL UNIQUE
+    name VARCHAR(20) NOT NULL UNIQUE
 );
 
 CREATE TABLE users
@@ -49,14 +46,14 @@ CREATE TABLE team_users
 (
     team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    unique (team_id, user_id)
+    UNIQUE (team_id, user_id)
 );
 
 CREATE TABLE team_invites
 (
     team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    unique (team_id, user_id)
+    UNIQUE (team_id, user_id)
 );
 
 CREATE TABLE environments
@@ -68,29 +65,36 @@ CREATE TABLE environments
 CREATE TABLE games
 (
     id             SERIAL PRIMARY KEY,
-    name           VARCHAR(50)   NOT NULL UNIQUE,
-    files_path     VARCHAR(1024) NOT NULL UNIQUE,
-    gui_path       VARCHAR(1024) NOT NULL UNIQUE,
-    overview_path  VARCHAR(1024) NOT NULL UNIQUE,
-    rules_path     VARCHAR(1024) NOT NULL UNIQUE,
-    deadline       TIMESTAMP     NOT NULL,
-    environment_id INTEGER       NOT NULL REFERENCES environments (id) ON DELETE CASCADE
+    name           VARCHAR(50) NOT NULL UNIQUE,
+    subtitle       VARCHAR(100),
+    files_path     VARCHAR(1024) UNIQUE,
+    deadline       TIMESTAMP   NOT NULL,
+    automake       BOOLEAN     NOT NULL,
+    is_active      BOOLEAN     NOT NULL DEFAULT FALSE,
+    environment_id INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE
 );
 
 CREATE TABLE submissions
 (
     id              SERIAL PRIMARY KEY,
-    path            VARCHAR(1024) NOT NULL UNIQUE,
-    exec_type       exec_type     NOT NULL,
-    submission_time TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    name            VARCHAR(50)   NOT NULL UNIQUE,
-    status          status,
-    environment_id  INTEGER       NOT NULL REFERENCES environments (id) ON DELETE CASCADE,
+    submission_time TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    name            VARCHAR(50) NOT NULL,
+    automake        BOOLEAN     NOT NULL,
+    files_path      VARCHAR(1024) UNIQUE,
+    status          VARCHAR(20),
+    environment_id  INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE,
     team_id         INTEGER REFERENCES teams (id) ON DELETE CASCADE,
     admin_id        INTEGER REFERENCES admins (id) ON DELETE CASCADE,
     CONSTRAINT check_team_teacher CHECK (
             (team_id IS NULL AND admin_id IS NOT NULL)
             OR (team_id IS NOT NULL AND admin_id IS NULL) )
+);
+
+CREATE TABLE team_primary_submissions
+(
+    team_id       INTEGER NOT NULL UNIQUE REFERENCES teams (id) ON DELETE CASCADE,
+    submission_id INTEGER NOT NULL REFERENCES submissions (id) ON DELETE CASCADE,
+    UNIQUE (team_id, submission_id)
 );
 
 CREATE TABLE results
@@ -102,38 +106,38 @@ CREATE TABLE results
     second_submission_id INTEGER   REFERENCES submissions (id) ON DELETE SET NULL
 );
 
-DROP PROCEDURE IF EXISTS create_user_team(user_id int, user_nickname varchar);
+DROP PROCEDURE IF EXISTS create_user_team(user_id INT, user_nickname VARCHAR);
 
-create or replace procedure create_user_team(user_id int, user_nickname varchar)
-as
+CREATE OR REPLACE PROCEDURE create_user_team(user_id INT, user_nickname VARCHAR)
+AS
 $BODY$
 DECLARE
     new_team_id user_id%TYPE;
-    team_idx    integer := 1;
-begin
-    while ((SELECT id FROM teams WHERE name LIKE user_nickname::text || ' team ' || team_idx::text) IS NOT NULL)
-        loop
+    team_idx    INTEGER := 1;
+BEGIN
+    WHILE ((SELECT id FROM teams WHERE name LIKE user_nickname::TEXT || ' team ' || team_idx::TEXT) IS NOT NULL)
+        LOOP
             team_idx := team_idx + 1;
-        end loop;
+        END LOOP;
     INSERT INTO teams(name, leader_id)
-    VALUES (user_nickname::text || ' team ' || team_idx::text, user_id)
-    RETURNING id into new_team_id;
+    VALUES (user_nickname::TEXT || ' team ' || team_idx::TEXT, user_id)
+    RETURNING id INTO new_team_id;
 
     INSERT INTO team_users(team_id, user_id)
     VALUES (new_team_id, user_id);
-end;
+END;
 $BODY$
-    language plpgsql;
+    LANGUAGE plpgsql;
 
 DROP FUNCTION IF EXISTS create_initial_team;
 CREATE FUNCTION create_initial_team() RETURNS TRIGGER AS
 $BODY$
 BEGIN
-    call create_user_team(new.id, new.code);
-    RETURN null;
+    CALL create_user_team(new.id, new.code);
+    RETURN NULL;
 END;
 $BODY$
-    language plpgsql;
+    LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trig_user_added ON users;
 
@@ -150,7 +154,7 @@ DECLARE
     new_leader_id      users.id%TYPE;
     user_team_nickname users.nickname%TYPE;
 BEGIN
-    IF (SELECT id FROM teams WHERE leader_id = old.user_id) IS NOT NULL then
+    IF (SELECT id FROM teams WHERE leader_id = old.user_id) IS NOT NULL THEN
         SELECT user_id
         FROM team_users
         WHERE team_id = old.team_id FETCH FIRST ROW ONLY
@@ -166,14 +170,14 @@ BEGIN
             WHERE id = old.team_id;
         END IF;
     END IF;
-    IF (TG_OP = 'DELETE') THEN
-        SELECT nickname from users where id = old.user_id INTO user_team_nickname;
-        call create_user_team(old.user_id, user_team_nickname);
+    IF (tg_op = 'DELETE') THEN
+        SELECT nickname FROM users WHERE id = old.user_id INTO user_team_nickname;
+        CALL create_user_team(old.user_id, user_team_nickname);
     END IF;
     RETURN NULL;
 END;
 $BODY$
-    language plpgsql;
+    LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS trig_team_changed ON team_users;
 
@@ -183,3 +187,52 @@ CREATE TRIGGER trig_team_changed
     ON team_users
     FOR EACH ROW
 EXECUTE PROCEDURE manage_team_leaders();
+
+DROP FUNCTION IF EXISTS set_primary_submission;
+CREATE FUNCTION set_primary_submission() RETURNS TRIGGER AS
+$BODY$
+DECLARE
+BEGIN
+    IF new.admin_id IS NULL THEN
+        IF (SELECT team_id FROM team_primary_submissions WHERE team_id = new.team_id) IS NULL THEN
+            INSERT INTO team_primary_submissions
+            VALUES (new.team_id, new.id);
+        END IF;
+    END IF;
+    RETURN NULL;
+END;
+$BODY$
+    LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trig_submission_created ON submissions;
+
+CREATE TRIGGER trig_submission_created
+    AFTER INSERT
+    ON submissions
+    FOR EACH ROW
+EXECUTE PROCEDURE set_primary_submission();
+
+DROP FUNCTION IF EXISTS deactivate_last_game;
+CREATE FUNCTION deactivate_last_game() RETURNS TRIGGER AS
+$BODY$
+DECLARE
+    old_active_game games.id%TYPE;
+BEGIN
+    SELECT id FROM games WHERE is_active IS TRUE FETCH FIRST ROW ONLY INTO old_active_game;
+    IF old_active_game IS NOT NULL THEN
+        UPDATE games
+        SET is_active = FALSE
+        WHERE id = old_active_game;
+    END IF;
+    RETURN NULL;
+END;
+$BODY$
+    LANGUAGE plpgsql;
+
+DROP TRIGGER IF EXISTS trig_submission_created ON submissions;
+
+CREATE TRIGGER game_activated
+    BEFORE UPDATE OF is_active
+    ON games
+    FOR EACH ROW
+EXECUTE PROCEDURE deactivate_last_game();

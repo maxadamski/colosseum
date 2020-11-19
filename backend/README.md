@@ -28,8 +28,14 @@ psql -d colosseum_db
 
 Create the schema using the 'make_schema.sql' file (it may be necessary to use the absolute path of the make_schema.sql file)
 
-```
+```bash
 \include database/make_schema.sql
+```
+
+You can also create some examples using the 'make_example_data.sql' file (it may be necessary to use the absolute path of the file)
+
+```bash
+\include database/make_example_data.sql
 ```
 
 Grant privileges to our colosseumdb admin user:
@@ -38,6 +44,8 @@ Grant privileges to our colosseumdb admin user:
 GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO colosseumdb_admin; 
 GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO colosseumdb_admin;
 ```
+
+**You can use different names for the database and user with a different password, but then you need to change the config/dbconfig.toml file**
 
 ### 3. Create conda environment with necessary requirements:
 

@@ -1,23 +1,22 @@
 -- :name get_classes :many
-select classes.id, classes.name
-from classes;
+SELECT *
+FROM classes;
 
--- :name get_class :one
-select classes.id, classes.name
-from classes
-where classes.name = :name;
-
--- :name insert_class
-insert into classes (name)
-values (:name)
-returning id;
+-- :name insert_class :scalar
+INSERT INTO classes (name)
+VALUES (:name)
+RETURNING id;
 
 -- :name update_class
-update classes
-set name = :name
-where id = :class_id;
+UPDATE classes
+SET name = :name
+WHERE id = :class_id;
 
--- :name delete_class
-delete
-from classes
-where id = :class_id;
+-- :name remove_class
+DELETE
+FROM classes
+WHERE id = :class_id;
+
+-- :name remove_all_classes
+DELETE
+FROM classes;

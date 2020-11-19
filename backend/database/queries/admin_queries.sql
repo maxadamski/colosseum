@@ -1,15 +1,15 @@
 -- :name get_admin :one
-select admins.id, admins.login, admins.password
-from admins
-where admins.login = :login;
+SELECT *
+FROM admins
+WHERE login = :login;
 
 -- :name update_admin
-update admins
-set login    = coalesce(:new_login, login),
+UPDATE admins
+SET login    = coalesce(:new_login, login),
     password = coalesce(:new_password, password)
-where id = :admin_id;
+WHERE id = :admin_id;
 
--- :name insert_admin
-insert into admins (login, password)
-values (:login, :password)
-returning id;
+-- :name insert_admin :scalar
+INSERT INTO admins (login, password)
+VALUES (:login, :password)
+RETURNING id;

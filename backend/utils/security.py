@@ -1,6 +1,6 @@
+import secrets
 from passlib.hash import argon2, sha256_crypt
 from fastapi import HTTPException
-import secrets
 from utils.time import *
 
 LOGIN_TIMEOUT = 24  # in hours
@@ -36,7 +36,7 @@ def hashed_token(token: str) -> bytes:
     return sha256_crypt.using(rounds=1000).hash(token)
 
 
-def verify_token(token: bytes, hash: bytes) -> bytes:
+def verify_token(token: str, hash: bytes) -> bytes:
     try:
         return sha256_crypt.verify(token, hash)
     except Exception:
