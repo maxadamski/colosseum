@@ -23,19 +23,19 @@ async def api_token(api_token: str):
     if not sha256_crypt.verify(api_token, config['api_token']):
         raise HTTPException(400, 'Invalid token')
 
-@app.get('/job/:id')
+@app.get('/job/{id}')
 async def get_job(id: int):
     return dict(status='?', description='?')
 
-@app.put('/job')
+@app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
     return
 
-@app.put('/player')
-async def new_player(env_id: int, automake: bool, data: bytes = File(...)):
+@app.put('/player/{id}')
+async def new_player(id: int, env_id: int, data: bytes = File(...), automake: bool):
     return
 
-@app.put('/game')
-async def new_game(env_id: int, data: bytes = File(...)):
+@app.put('/game/{id}')
+async def new_game(id: int, env_id: int, data: bytes = File(...), automake: bool):
     return
 
