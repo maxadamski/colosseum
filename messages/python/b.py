@@ -3,6 +3,7 @@ from sys import argv
 
 f = col.open(argv[1], 'r')
 while True:
-    data, tag = col.recv(f)
+    data = col.recv(f)
     if not data: continue
-    print(f'<-- {data} [tag {tag}, size {len(data)}]')
+    tag, res = data
+    print(f'<-- [tag {tag}] {res}')

@@ -1,8 +1,20 @@
 import struct
 import os
 import sys
+import numpy as np
 
 from select import select
+
+type_size   = {0:1, 1:4, 2:1, 3:4}
+struct_type = {0:'<B', 1:'<L', 2:'<b', 3:'<l'}
+numpy_type  = {0:'<u1', 1:'<u4', 2:'<i1', 3:'<i4'}
+
+def hexdump(bytes):
+    return ' '.join(f'{x:02X}' for x in bytes)
+
+def panic(*args, file=sys.stderr, **kwargs):
+    print(*args, file=file, **kwargs)
+    sys.exit(1)
 
 def open(f, mode):
     if mode == 'r': return os.open(f, os.O_RDONLY)
@@ -12,41 +24,89 @@ def open(f, mode):
 def close(f):
     os.close(f)
 
-def panic(*args, file=sys.stderr, **kwargs):
-    print(*args, file=file, **kwargs)
-    sys.exit(1)
+def send(f, tag, *args):
+    type = bytearray()
+    data = bytearray()
+    
+    for arg in args:
+        if isinstance(arg, int):
+            type += struct.pack('<B', 1)
+            data += struct.pack('<L', arg)
+            continue
 
-def send(f, data, tag=0):
-    size = len(data)
-    os.write(f, struct.pack('<Lb', size, tag))
+        if isinstance(arg, list):
+            arg = np.array(arg)
+        elif isinstance(arg, str):
+            arg = np.fromstring(arg, '<u1')
 
-    if isinstance(data, str):
-        # TODO: convert to little endian here
-        data = bytes(data, 'utf-8')
-    elif isinstance(data, int):
-        data = struct.pack('<L', data)
+        if isinstance(arg, np.ndarray):
+            dims = struct.pack('<B', len(arg.shape))[0]
+            base, view = None, None
+            if arg.dtype == np.uint8:
+                base, view = 0, '<u1'
+            elif arg.dtype == np.uint32 or arg.dtype == np.uint64:
+                base, view = 1, '<u4'
+            elif arg.dtype == np.int8:
+                base, view = 2, '<i1'
+            elif arg.dtype == np.int32 or arg.dtype == np.int64:
+                base, view = 3, '<i4'
+            data += arg.astype(np.dtype(view)).tobytes()
+            type += struct.pack('<B', 1 << 7 | dims << 4 | base)
+            for dim in arg.shape:
+                type += struct.pack('<L', dim)
+            # TODO: convert to little endian here
 
-    if not isinstance(data, bytes):
-        panic(f"Can't send object {data} of type {type(data)} (type not supported).")
+    type = struct.pack('<L', len(type)) + type
+    tlen, dlen = len(type), len(data)
+    head = struct.pack('<Lb', tlen + dlen, tag)
+    sent = os.write(f, head + type + data)
+    return sent
 
-    assert os.write(f, data) == size
-
-def recv(f, astype=None):
-    header_len = 5
-    buf = os.read(f, header_len)
-    while len(buf) < header_len:
+def recv(f):
+    hlen = 5
+    head = os.read(f, hlen)
+    while len(head) < hlen:
         select([f], [], [f])
-        buf += os.read(f, header_len - len(buf))
-    size, tag = struct.unpack('<Lb', buf)
-    data = os.read(f, size)
-    while len(data) < size:
+        head += os.read(f, hlen - len(head))
+    size, tag = struct.unpack('<Lb', head)
+    body = os.read(f, size)
+    while len(body) < size:
         select([f], [], [f])
-        data += os.read(f, size - len(data))
+        body += os.read(f, size - len(body))
 
-    if astype == str:
-        data = data.decode('utf-8')
-    elif astype == int:
-        data = struct.unpack('<L', data)
+    tlen, = struct.unpack('<L', body[:4]); body = body[4:]
+    type, body = body[:tlen], body[tlen:]
+    dlen = size - hlen - tlen + 1
+    data, body = body[:dlen], body[dlen:]
 
-    return data, tag
+    args = []
+    i = 0
+    while type:
+        argtype, type  = type[0], type[1:]
+        i += 1
+        isarr = argtype >> 7 & 0x01
+        ndim  = argtype >> 4 & 0x07
+        base  = argtype & 0x0F
+        size  = type_size[base]
+        sfmt  = struct_type[base]
+        afmt  = numpy_type[base]
+        if isarr:
+            dims = []
+            for x in range(ndim):
+                argdim, type  = type[:4], type[4:]
+                dim = struct.unpack('<L', argdim)[0]
+                size *= dim
+                dims.append(dim)
+            arg, data = data[:size], data[size:]
+            arg = np.frombuffer(arg, dtype=afmt)
+            arg = arg.reshape(dims)
+            if base == 0:
+                arg = str(arg, encoding='utf-8')
+            args.append(arg)
+
+        else:
+            arg, data = data[:size], data[size:]
+            args.append(struct.unpack(sfmt, arg)[0]) 
+
+    return (tag, args)
 
