@@ -1,5 +1,13 @@
 #include "colosseum.h"
 
+u8 const max_fields = 8;
+u8 const max_dim = 8;
+u32 const max_types = (4*max_dim+1)*max_fields;
+
+typedef struct {
+	u32 field_count, type_size, data_size;
+} Metadata;
+
 Arg_Type const format_type[] = {
 	['u']=T_U8 , ['U']=T_U32, ['i']=T_I8, ['I']=T_I32, 
 	['f']=T_F32, ['F']=T_F64, ['b']=T_BOOL
@@ -15,182 +23,192 @@ u32 const type_size[] = {
 	[T_F32]=4, [T_F64]=8, [T_BOOL]=1,
 };
 
-i32 msendf(int f, Tag tag, char const *fmt, ...) {
-	u32 const max_arg = 8;
-	u32 const max_dim = 8;
-	u32 const max_types = (4*max_dim+1)*max_arg;
-	u32 const max_header = 6 + max_types;
-	u8 header[max_header];
+u32 parse_num(char const **fmt) {
+	u32 res = 0;
+	while ('0' <= **fmt && **fmt <= '9') {
+		res = res * 10 + **fmt - '0';
+		*fmt += 1;
+	}
+	return res;
+}
 
-	u8 *types = header + 10;
-	u32 n_types = 0;
+void hexdump(void const *buffer, u32 size) {
+	u8 const *bytes = (u8 const *) buffer;
+	for (int i = 0; i < size; i++)
+		printf("%02X ", bytes[i]);
+}
 
-	void *values[max_arg];
-	u32 sizes[max_arg];
-	u32 data_size = 0;
+void vmdecode(u8 const *data, char const *fmt, va_list args) {
+	u8 const *types = data;
+	u32 field = 0, type = 0;
+	u32 sizes[max_fields];
+	void *argp[max_fields];
 
-	va_list args;
-	va_start(args, fmt);
-
-	int arg = 0;
 	while (*fmt) {
-		if (*fmt++ != '%') {
-			continue;
-		}
+		if (*fmt++ != '%') continue;
+		if (field >= max_fields) panic("message must have at most %d fields, but found %d\n", max_fields, field);
+		u8 msg_type = types[type++];
+		u8 msg_base = msg_type >> 0 & 0x0F;
+		u8 msg_dims = msg_type >> 4 & 0x07;
+		u8 is_array = msg_type >> 7 & 0x01;
+		u8 exp_type = format_type[(u8) *fmt++];
+		sizes[field] = type_size[msg_base];
+		if (exp_type != msg_base)
+			panic("message field %d expected base type %02X, but got %02X", field, exp_type, msg_base);
+		//if (is_array)
+		//argp[field] = va_arg(args, void**);
+		//else
+		argp[field] = va_arg(args, void*);
 
-		if (arg >= max_arg) panic("argument limit exceeded (%d)\n", arg);
-		values[arg] = va_arg(args, void*);
-
-		Arg_Type base = format_type[(u8) *fmt++];
-		sizes[arg] = type_size[base];
-
-		if (*fmt++ == '[') {
-			u32 dims[8];
-			u8 n_dims = 0;
-			while (*fmt != ']') {
+		if (*fmt == '[') {
+			if (!is_array) panic("message field %d is not an array, found %02X\n", field, mtype);
+			u8 fmt_dims = 0;
+			while (*(++fmt) != ']') {
+				u32 dim = 0, max = 0;
 				if (*fmt == '%') {
-					dims[n_dims++] = va_arg(args, u32);
 					fmt++;
-
+					dim = *((u32*)(types + type));
+					type += 4;
+					if (fmt[0] == '<' && fmt[1] == '=') {
+						fmt += 2;
+						max = parse_num(&fmt);
+					}
+					*va_arg(args, u32*) = dim;
 				} else {
-					u32 dim = 0;
-					while ('0' <= *fmt && *fmt <= '9')
-						dim = dim * 10 + *fmt++ - '0';
-					if (dim == 0) panic("array dimensions must be greater than 0\n");
-					dims[n_dims++] = dim;
+					dim = max = parse_num(&fmt);
 				}
+				if (dim > max) panic("array dimimension %d must be less than %d, as specified in the format\n", fmt_dims, max);
+				if (dim == 0 || max == 0) panic("array dimensions must be greater than 0\n");
 				if (*fmt == ']') break;
 				if (*fmt != ',') panic("expected `,` but got `%c`\n", *fmt);
-				fmt++;
+				sizes[field] *= dim;
+				fmt_dims++;
 			}
-			fmt++;
+			if (fmt_dims != msg_dims) panic("array dimensions don't match (%d != %d)\n", fmt_dims, msg_dims);
+			if (fmt_dims == 0) panic("array must have at least one dimension\n");
+			if (fmt_dims > max_dim) panic("array must have at most eight dimensions\n");
+		}
+		field++;
+	}
 
+	u32 offset = 0;
+	for (int i = 0; i < field; i++) {
+		memcpy(argp[i], data + type + offset, sizes[i]);
+		offset += sizes[i];
+	}
+
+#ifdef DEBUG
+	printf("type "); hexdump(types, type); printf("\n");
+	for (int i = 0; i < field; i++) {
+		printf("arg%d ", i); hexdump(argp[i], sizes[i]); printf("\n");
+	}
+#endif
+
+}
+
+Metadata vmencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, va_list args) {
+	u8 type = 0, field = 0;
+	u32 total = 0;
+	while (*fmt) {
+		if (*fmt++ != '%') continue;
+		if (field >= max_fields) panic("message must have at most %d fields (found %d)\n", max_fields, field);
+		u8 base = format_type[(u8) *fmt++];
+		sizes[field] = type_size[base];
+		fields[field] = va_arg(args, void*);
+		if (*fmt == '[') {
+			u32 dims[8];
+			u8 n_dims = 0;
+			while (*(++fmt) != ']') {
+				u32 dim;
+				if (*fmt == '%') {
+					fmt++;
+					dim = va_arg(args, u32);
+				} else {
+					dim = parse_num(&fmt);
+				}
+				if (dim == 0) panic("array dimensions must be greater than 0\n");
+				dims[n_dims++] = dim;
+				if (*fmt == ']') break;
+				if (*fmt != ',') panic("expected `,` but got `%c`\n", *fmt);
+			}
 			if (n_dims == 0) panic("array must have at least one dimension\n");
-			types[n_types++] = 0x80 | ((0x07 & n_dims) << 4) | (base & 0x0F);
+			if (n_dims > max_dim) panic("array must have at most eight dimensions\n");
+			types[type++] = 0x80 | (0x07 & n_dims) << 4 | (base & 0x0F);
 			for (int i = 0; i < n_dims; i++) {
 				u32 dim = dims[i];
-				sizes[arg] *= dim;
-				*((u32*)(types + n_types)) = dim;
-				n_types += 4;
+				sizes[field] *= dim;
+				*((u32*)(types + type)) = dim;
+				type += 4;
 			}
 		} else {
-			types[n_types++] = base & 0x0F;
+			types[type++] = base & 0x0F;
 		}
-
-		data_size += sizes[arg];
-		arg++;
+		total += sizes[field];
+		field++;
 	}
 
-	debug("sending header (%u bytes)\n", 10 + n_types);
+	return (Metadata){.field_count=field, .type_size=type, .data_size=total};
+}
 
-	((u32*)(header+0))[0] = n_types + data_size;
-	header[4] = tag;
-	header[5] = arg;
-	((u32*)(header+6))[0] = n_types;
+Metadata mencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, ...) {
+	va_list vargs;
+	va_start(vargs, fmt);
+	Metadata res = vmencode(fields, sizes, types, fmt, vargs);
+	va_end(vargs);
+	return res;
+}
 
-	debug("[head] ");
-	for (int i = 0; i < 10; i++) debug("%02X ", header[i]);
-	debug("\n");
+void mscanf(u8 *data, char const *fmt, ...) {
+	va_list vargs;
+	va_start(vargs, fmt);
+	vmdecode(data, fmt, vargs);
+	va_end(vargs);
+}
 
-	u32 sent = write(f, &header, 10);
+i32 msendf(int f, Tag tag, char const *fmt, ...) {
+	void *fields[max_fields];
+	u32 sizes[max_fields];
+	u8 types[max_types];
+	va_list vargs;
+	va_start(vargs, fmt);
+	Metadata res = vmencode(fields, sizes, types, fmt, vargs);
+	va_end(vargs);
+	u32 const size = res.type_size + res.data_size;
+	u32 sent = 0;
+	sent += write(f, &size, 4);
+	sent += write(f, &tag, 1);
+	sent += write(f, types, res.type_size);
+	for (int i = 0; i < res.field_count; i++)
+		sent += write(f, fields[i], sizes[i]);
 
-	debug("[type] ");
-	for (int i = 0; i < n_types; i++) debug("%02X ", types[i]);
-	debug("\n");
-
-	sent += write(f, types, n_types);
-
-	for (int i = 0; i < arg; i++) {
-		u8 *value = (u8*) (values + i);
-		debug("[arg%d] ", i);
-		for (int j = 0; j < sizes[i]; j++) debug("%02X ", value[j]);
-		debug("\n");
-		sent += write(f, value, sizes[i]);
+#ifdef DEBUG
+	printf("type "); hexdump(types, res.type_size); printf("\n");
+	for (int i = 0; i < res.field_count; i++) {
+		printf("arg%d ", i); hexdump(fields+i, sizes[i]); printf("\n");
 	}
-
-	va_end(args);
+#endif
 
 	return sent;
 }
 
-i32 mrecvf(int f, Tag tag, char const *fmt, ...) {
-	// TODO: wait for message with tag `tag`
-	i32 recv = 0;
-	u8 head[10];
-	u32 type_i = 0;
-	recv += read(f,head, 10);
-
-	u32 cur_size = 0;
-	u32 max_size = *((u32*)(head + 0));
-	tag          = *((u8*)(head + 4));
-	u8  max_arg  = *((u8*)(head + 5));
-	u32 max_type = *((u32*)(head + 6));
-
-	u8 arg = 0;
-
-	u8 type[max_type];
-	recv += read(f, &type, max_type);
-
-	debug("recv head ");
-	for (int i = 0; i < 10; i++) debug("%02X ", head[i]);
-	debug("\n");
-	debug("recv type ");
-	for (int i = 0; i < max_type; i++) debug("%02X ", type[i]);
-	debug("\n");
-
-	va_list args;
-	va_start(args, fmt);
-
-	while (type_i < max_type && arg < max_arg) {
-		u8 typ  = type[type_i++];
-		u8 is_a = (typ & 0x80) >> 7;
-		u8 dims = (typ & 0x70) >> 4;
-		u8 base = typ & 0x0F;
-		u32 size = type_size[base];
-		for (u8 i = 0; is_a && i < dims; i++) {
-			size *= *((u32*)(type + type_i));
-			type_i += 4;
-		}
-		
-		if (cur_size + size > max_size) panic("message body size exceeded maximum\n");
-		void *argp = va_arg(args, void*);
-		recv += read(f, argp, size);
-
-		debug("recv arg%d ", arg);
-		for (int i = 0; i < size; i++) {
-			if (i > 16) {
-				debug("... (size=%u)", size);
-				break;
-			}
-			debug("%02X ", ((u8*)argp)[i]);
-		}
-		debug("\n");
-
-		arg++;
-	}
-
-	va_end(args);
-	return 0;
-}
-
 i32 msend(int f, Tag tag, void const *data, u32 size) {
 	// TODO: if machine is big endian convert bytes from big to little endian
-	write(f, &size, sizeof(size));
-	write(f, &tag, sizeof(tag));
+	write(f, &size, 4);
+	write(f, &tag, 1);
 	return size > 0 ? write(f, data, size) : 0;
 }
 
-i32 mrecv(int f, Tag *tag, void *data, u32 size) {
+i32 mrecv(int f, Tag *tag, void *data, u32 max_size) {
 	// TODO: if machine is big endian convert bytes from little to big endian
-	u32 message_size;
-	read(f, &message_size, 4);
-	if (message_size > size)
-		panic("incoming message size %u exceeded maxiumum beffer size %u\n", message_size, size);
-	read(f, tag, 1);
-	return size > 0 ? read(f, data, message_size) : 0;
+	u32 size;
+	u32 recv = 0;
+	recv += read(f, &size, 4);
+	recv += read(f, tag, 1);
+	if (size > max_size)
+		debug("incoming message size %u exceeded maximum buffer size %u\n", size, max_size);
+	u32 data_size = size > 0 ? read(f, data, size) : 0;
+	if (data_size < size)
+		panic("expected payload of size %u, but only received %u bytes\n", size, data_size);
+	return recv + data_size;
 }
 
-i32 mrecvt(int f, Tag tag, void *data, u32 size) {
-	// TODO: wait for message with tag `tag`
-	return -1;
-}

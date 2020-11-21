@@ -80,10 +80,8 @@ def recv(f):
     data, body = body[:dlen], body[dlen:]
 
     args = []
-    i = 0
     while type:
         argtype, type  = type[0], type[1:]
-        i += 1
         isarr = argtype >> 7 & 0x01
         ndim  = argtype >> 4 & 0x07
         base  = argtype & 0x0F
@@ -100,7 +98,7 @@ def recv(f):
             arg, data = data[:size], data[size:]
             arg = np.frombuffer(arg, dtype=afmt)
             arg = arg.reshape(dims)
-            if base == 0:
+            if base == 0 and len(dims) == 1:
                 arg = str(arg, encoding='utf-8')
             args.append(arg)
 

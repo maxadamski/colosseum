@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <fcntl.h>
 
+#define DEBUG
+
 typedef int8_t   Tag;
 
 //msize_t mrecv_size = 0;
@@ -27,17 +29,9 @@ extern Arg_Type const format_type[];
 
 extern u32 const format_size[];
 
-/** Typed send
- *
- *
- */
 i32 msendf(int f, Tag tag, char const *fmt, ...);
 
-/** Typed recv waits for message of a given tag
- *
- *
- */
-i32 mrecvf(int f, Tag tag, char const *fmt, ...);
+void mscanf(u8 *data, char const *fmt, ...);
 
 /** Low-level send (without splitting arguments), returns bytes written
  *
@@ -54,12 +48,3 @@ i32 msend(int f, Tag tag, void const *data, u32 size);
  */
 i32 mrecv(int f, Tag *tag, void *data, u32 size);
 
-
-/**
- *  Low-level function to receive a message with a given tag
- *  @param tag - expected message tag
- *  @param buffer - incoming message payload
- *  @param size - maximum buffer size
- *  @returns buffer size
- */
-i32 mrecvt(int f, Tag tag, void *data, u32 size);
