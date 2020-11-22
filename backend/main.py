@@ -218,13 +218,13 @@ async def get_user_team_submissions(session=Depends(user_session)):
 
 
 @app.post('/users/me/team/submission')
-async def create_user_team_submission(name: str = Body(...), automake: bool = Body(...),
+async def create_user_team_submission(name: str = Body(...), is_automake: bool = Body(...),
                                       environment_id: int = Body(...),
                                       executables: UploadFile = File(...), session=Depends(user_session)):
     user_id = session['user_id']
     user_team = db.get_user_team(user_id=user_id)
     submission_id = db.insert_team_submission(name=name,
-                                              automake=automake,
+                                              is_automake=is_automake,
                                               environment_id=environment_id,
                                               team_id=user_team['id'])
 
@@ -329,7 +329,7 @@ async def get_game(id: int, session=Depends(admin_session)):
 
 
 @app.post('/game')
-async def create_game(name: str = Body(...), subtitle: str = Body(...), automake: bool = Body(...),
+async def create_game(name: str = Body(...), subtitle: str = Body(...), is_automake: bool = Body(...),
                       environment_id: int = Body(...), deadline: date = Body(...),
                       executables: UploadFile = File(...),
                       gui: UploadFile = File(...),
@@ -337,7 +337,7 @@ async def create_game(name: str = Body(...), subtitle: str = Body(...), automake
                       rules: UploadFile = File(...), session=Depends(admin_session)):
     game_id = db.insert_game(name=name,
                              subtitle=subtitle,
-                             automake=automake,
+                             is_automake=is_automake,
                              deadline=deadline,
                              environment_id=environment_id)
 
@@ -352,7 +352,7 @@ async def create_game(name: str = Body(...), subtitle: str = Body(...), automake
 
 
 @app.patch('/game/{id}')
-async def update_game(id: int, name: str = None, subtitle: str = None, automake: bool = None,
+async def update_game(id: int, name: str = None, subtitle: str = None, is_automake: bool = None,
                       environment_id: int = None, deadline: Optional[date] = None,
                       executables: Optional[UploadFile] = File(None),
                       gui: Optional[UploadFile] = File(None),
@@ -361,7 +361,7 @@ async def update_game(id: int, name: str = None, subtitle: str = None, automake:
     db.update_game(game_id=id,
                    new_name=name,
                    new_subtitle=subtitle,
-                   new_automake=automake,
+                   new_is_automake=is_automake,
                    new_deadline=deadline,
                    new_environment_id=environment_id)
 
@@ -409,12 +409,12 @@ async def get_reference_submissions(session=Depends(admin_session)):
 
 
 @app.post('/ref_submission')
-async def create_reference_submission(name: str = Body(...), automake: bool = Body(...),
+async def create_reference_submission(name: str = Body(...), is_automake: bool = Body(...),
                                       environment_id: int = Body(...),
                                       executables: UploadFile = File(...), session=Depends(admin_session)):
     admin_id = session['user_id']
     submission_id = db.insert_admin_submission(name=name,
-                                               automake=automake,
+                                               is_automake=is_automake,
                                                environment_id=environment_id,
                                                admin_id=admin_id)
 
@@ -426,7 +426,7 @@ async def create_reference_submission(name: str = Body(...), automake: bool = Bo
 
 
 @app.patch('/ref_submission/{id}')
-async def update_reference_submission(id: int, name: str = None, automake: bool = None,
+async def update_reference_submission(id: int, name: str = None, is_automake: bool = None,
                                       environment_id: int = None,
                                       executables: Optional[UploadFile] = File(None), session=Depends(admin_session)):
     ref_submission = db.get_submission(submission_id=id)
@@ -434,7 +434,7 @@ async def update_reference_submission(id: int, name: str = None, automake: bool 
         raise FORBIDDEN
 
     db.update_submission(submission_id=id, new_name=name,
-                         new_automake=automake, new_environment_id=environment_id)
+                         new_is_automake=is_automake, new_environment_id=environment_id)
 
     if executables:
         submission_dir = get_submission_directory(id)

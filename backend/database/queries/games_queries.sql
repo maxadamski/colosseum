@@ -10,10 +10,10 @@ WHERE id = :game_id;
 -- :name insert_game :scalar
 INSERT INTO games (name,
                    subtitle,
-                   automake,
+                   is_automake,
                    deadline,
                    environment_id)
-VALUES (:name, :subtitle, :automake, :deadline, :environment_id)
+VALUES (:name, :subtitle, :is_automake, :deadline, :environment_id)
 RETURNING id;
 
 -- :name update_game_path
@@ -25,7 +25,7 @@ WHERE id = :game_id;
 UPDATE games
 SET name           = coalesce(:new_name, name),
     subtitle       = coalesce(:new_subtitle, subtitle),
-    automake       = coalesce(:new_automake, automake),
+    is_automake       = coalesce(:new_is_automake, is_automake),
     deadline       = coalesce(:new_deadline, deadline),
     environment_id = coalesce(:new_environment_id, environment_id)
 WHERE id = :game_id;

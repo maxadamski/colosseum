@@ -18,10 +18,10 @@ WHERE s.team_id = :team_id;
 
 -- :name insert_team_submission :scalar
 INSERT INTO submissions (name,
-                         automake,
+                         is_automake,
                          environment_id,
                          team_id)
-VALUES (:name, :automake, :environment_id, :team_id)
+VALUES (:name, :is_automake, :environment_id, :team_id)
 RETURNING id;
 
 -- :name set_primary_submission
@@ -30,22 +30,22 @@ SET submission_id = :submission_id
 WHERE team_id = :team_id;
 
 -- :name get_admins_submissions :many
-SELECT id, submission_time, name, automake, status, environment_id
+SELECT id, submission_time, name, is_automake, status, environment_id
 FROM submissions
 WHERE admin_id IS NOT NULL;
 
 -- :name insert_admin_submission :scalar
 INSERT INTO submissions (name,
-                         automake,
+                         is_automake,
                          environment_id,
                          admin_id)
-VALUES (:name, :automake, :environment_id, :admin_id)
+VALUES (:name, :is_automake, :environment_id, :admin_id)
 RETURNING id;
 
 -- :name update_submission
 UPDATE submissions
 SET name            = coalesce(:new_name, name),
-    automake        = coalesce(:new_automake, automake),
+    is_automake        = coalesce(:new_is_automake, is_automake),
     environment_id  = coalesce(:new_environment_id, environment_id),
     submission_time = default
 WHERE id = :submission_id;
