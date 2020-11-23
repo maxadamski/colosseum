@@ -5,11 +5,11 @@
 #include <assert.h>
 #include <time.h>
 
-#ifdef DEBUG
 #define panic(fmt, args...) do { fprintf(stderr, "[error %s -> %s] " fmt, __FILE__, __func__, ##args); exit(1); } while (0)
+
+#ifdef DEBUG
 #define debug(fmt, args...) do { fprintf(stderr, fmt, ##args); } while (0)
 #else
-#define panic(fmt, args...) do {} while(0)
 #define debug(fmt, args...) do {} while(0)
 #endif
 

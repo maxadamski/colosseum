@@ -12,27 +12,63 @@ prim = bool | i8 | i32 | u8 | u32 | f32 | f64
 ## Binary interface
 
 ```
-Size = XX XX XX XX
-Tag  = XX 
-Argc = XX
-Type = ...
-Data = ...
+Size  = XX XX XX XX
+Tag   = XX 
+Data* = XX XX XX XX
+Type  = ...
+Data  = ...
 
-type      | binary
-----------|----------
-u8        | 0000 0000
-u32       | 0000 0001
-i8        | 0000 0010
-i32       | 0000 0011
-f32       | 0000 0100
-f64       | 0000 0101
-bool      | 0000 0110
-...       | ...
-          | 1000 ----
-arr T N   | 1NNN TTTT [ dim1 ] 
-          | 1NNN TTTT [ dim1 ] [ dim2 ]
-          | 1NNN TTTT ...
+type    |hex |bin
+--------|----|-----------
+u8      | 00 | 0 000 0000
+u16     | 01 | 0 000 0001
+u32     | 02 | 0 000 0010
+u64     | 03 | 0 000 0011
+i8      | 04 | 0 000 0100
+i16     | 05 | 0 000 0101
+i32     | 06 | 0 000 0110
+i64     | 07 | 0 000 0111
+f32     | 08 | 0 000 1000
+f64     | 09 | 0 000 1001
+bool    | 0A | 0 000 1010
+char    | 0B | 0 000 1011
+---     | 0C | 0 000 1100
+---     | 0D | 0 000 1101
+---     | 0E | 0 000 1110
+---     | 0F | 0 000 1111
+arr T 1 | 1X | 0 001 TTTT [d1]                         
+arr T 2 | 2X | 0 010 TTTT [d1] [d2]                    
+arr T 3 | 3X | 0 011 TTTT [d1] [d2] [d3]               
+arr T 4 | 4X | 0 100 TTTT [d1] [d2] [d3] [d4]          
+arr T 5 | 5X | 0 101 TTTT [d1] [d2] [d3] [d4] [d5]     
+arr T 6 | 6X | 0 110 TTTT [d1] [d2] [d3] [d4] [d5] [d6]
+arr T N | 7X | 0 111 TTTT [Nd] [d1] [..] [dN]          
+---     | 8X | 1 000 TTTT
+tup T 1 | 9X | 1 001 TTTT [t1]                         
+tup T 2 | AX | 1 010 TTTT [t1] [t2]                    
+tup T 3 | BX | 1 011 TTTT [t1] [t2] [t3]               
+tup T 4 | CX | 1 100 TTTT [t1] [t2] [t3] [t4]          
+tup T 5 | DX | 1 101 TTTT [t1] [t2] [t3] [t4] [t5]     
+tup T 6 | EX | 1 110 TTTT [t1] [t2] [t3] [t4] [t5] [t6]
+tup T N | FX | 1 111 TTTT [Nt] [t1] [..] [tN]          
 ```
+
+## Format syntax
+
+```
+T[t1, ..., tN]
+()
+
+T[]
+
+T[%<=1024]
+
+%3(u8 bool char)
+
+```
+
+
+
 
 /*
 

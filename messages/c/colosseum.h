@@ -11,7 +11,7 @@
 #include <stdint.h>
 #include <fcntl.h>
 
-#define DEBUG
+//#define DEBUG
 
 typedef int8_t   Tag;
 

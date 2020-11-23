@@ -32,17 +32,16 @@ u32 parse_num(char const **fmt) {
 	return res;
 }
 
-void hexdump(void const *buffer, u32 size) {
-	u8 const *bytes = (u8 const *) buffer;
-	for (int i = 0; i < size; i++)
-		printf("%02X ", bytes[i]);
+void hexdump(u8 const *buffer, u32 size) {
+	for (u32 i = 0; i < size; i++)
+		printf("%02X ", buffer[i]);
 }
 
 void vmdecode(u8 const *data, char const *fmt, va_list args) {
 	u8 const *types = data;
 	u32 field = 0, type = 0;
 	u32 sizes[max_fields];
-	void *argp[max_fields];
+	u8 *fields[max_fields];
 
 	while (*fmt) {
 		if (*fmt++ != '%') continue;
@@ -53,15 +52,11 @@ void vmdecode(u8 const *data, char const *fmt, va_list args) {
 		u8 is_array = msg_type >> 7 & 0x01;
 		u8 exp_type = format_type[(u8) *fmt++];
 		sizes[field] = type_size[msg_base];
+		fields[field] = va_arg(args, u8*);
 		if (exp_type != msg_base)
 			panic("message field %d expected base type %02X, but got %02X", field, exp_type, msg_base);
-		//if (is_array)
-		//argp[field] = va_arg(args, void**);
-		//else
-		argp[field] = va_arg(args, void*);
-
 		if (*fmt == '[') {
-			if (!is_array) panic("message field %d is not an array, found %02X\n", field, mtype);
+			if (!is_array) panic("message field %d is not an array, found %02X\n", field, msg_base);
 			u8 fmt_dims = 0;
 			while (*(++fmt) != ']') {
 				u32 dim = 0, max = 0;
@@ -77,11 +72,11 @@ void vmdecode(u8 const *data, char const *fmt, va_list args) {
 				} else {
 					dim = max = parse_num(&fmt);
 				}
-				if (dim > max) panic("array dimimension %d must be less than %d, as specified in the format\n", fmt_dims, max);
-				if (dim == 0 || max == 0) panic("array dimensions must be greater than 0\n");
+				if (dim > max) panic("array dimimension %d must be less than %d, as specified in the format, but got %d\n", fmt_dims, max, dim);
+				if (dim == 0 || max == 0) panic("array dimensions must be greater than 0, but got %d\n", dim);
+				sizes[field] *= dim;
 				if (*fmt == ']') break;
 				if (*fmt != ',') panic("expected `,` but got `%c`\n", *fmt);
-				sizes[field] *= dim;
 				fmt_dims++;
 			}
 			if (fmt_dims != msg_dims) panic("array dimensions don't match (%d != %d)\n", fmt_dims, msg_dims);
@@ -93,20 +88,21 @@ void vmdecode(u8 const *data, char const *fmt, va_list args) {
 
 	u32 offset = 0;
 	for (int i = 0; i < field; i++) {
-		memcpy(argp[i], data + type + offset, sizes[i]);
+		for (int j = 0; j < sizes[i]; j++) {
+			fields[i][j] = data[type + offset + j];
+		}
 		offset += sizes[i];
 	}
 
 #ifdef DEBUG
 	printf("type "); hexdump(types, type); printf("\n");
 	for (int i = 0; i < field; i++) {
-		printf("arg%d ", i); hexdump(argp[i], sizes[i]); printf("\n");
+		printf("arg%d ", i); hexdump(fields[i], sizes[i]); printf("\n");
 	}
 #endif
-
 }
 
-Metadata vmencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, va_list args) {
+Metadata vmencode(u8 *fields[], u32 *sizes, u8 *types, char const *fmt, va_list args) {
 	u8 type = 0, field = 0;
 	u32 total = 0;
 	while (*fmt) {
@@ -114,7 +110,7 @@ Metadata vmencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, va_lis
 		if (field >= max_fields) panic("message must have at most %d fields (found %d)\n", max_fields, field);
 		u8 base = format_type[(u8) *fmt++];
 		sizes[field] = type_size[base];
-		fields[field] = va_arg(args, void*);
+		u8 *arg = va_arg(args, u8*);
 		if (*fmt == '[') {
 			u32 dims[8];
 			u8 n_dims = 0;
@@ -140,8 +136,10 @@ Metadata vmencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, va_lis
 				*((u32*)(types + type)) = dim;
 				type += 4;
 			}
+			fields[field] = arg;
 		} else {
 			types[type++] = base & 0x0F;
+			fields[field] = (u8*) &arg;
 		}
 		total += sizes[field];
 		field++;
@@ -150,7 +148,7 @@ Metadata vmencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, va_lis
 	return (Metadata){.field_count=field, .type_size=type, .data_size=total};
 }
 
-Metadata mencode(void *fields[], u32 *sizes, u8 *types, char const *fmt, ...) {
+Metadata mencode(u8 *fields[], u32 *sizes, u8 *types, char const *fmt, ...) {
 	va_list vargs;
 	va_start(vargs, fmt);
 	Metadata res = vmencode(fields, sizes, types, fmt, vargs);
@@ -166,7 +164,7 @@ void mscanf(u8 *data, char const *fmt, ...) {
 }
 
 i32 msendf(int f, Tag tag, char const *fmt, ...) {
-	void *fields[max_fields];
+	u8 *fields[max_fields];
 	u32 sizes[max_fields];
 	u8 types[max_types];
 	va_list vargs;
@@ -174,9 +172,14 @@ i32 msendf(int f, Tag tag, char const *fmt, ...) {
 	Metadata res = vmencode(fields, sizes, types, fmt, vargs);
 	va_end(vargs);
 	u32 const size = res.type_size + res.data_size;
+
+	//u32 const total_size = 9 + res.type_size + res.data_size;
+	//u8 buffer[total_size];
+
 	u32 sent = 0;
 	sent += write(f, &size, 4);
 	sent += write(f, &tag, 1);
+	sent += write(f, &res.type_size, 4);
 	sent += write(f, types, res.type_size);
 	for (int i = 0; i < res.field_count; i++)
 		sent += write(f, fields[i], sizes[i]);
@@ -184,7 +187,7 @@ i32 msendf(int f, Tag tag, char const *fmt, ...) {
 #ifdef DEBUG
 	printf("type "); hexdump(types, res.type_size); printf("\n");
 	for (int i = 0; i < res.field_count; i++) {
-		printf("arg%d ", i); hexdump(fields+i, sizes[i]); printf("\n");
+		printf("arg%d ", i); hexdump(fields[i], sizes[i]); printf("\n");
 	}
 #endif
 
@@ -202,13 +205,20 @@ i32 mrecv(int f, Tag *tag, void *data, u32 max_size) {
 	// TODO: if machine is big endian convert bytes from little to big endian
 	u32 size;
 	u32 recv = 0;
+	u32 type_size = 0;
 	recv += read(f, &size, 4);
 	recv += read(f, tag, 1);
+	recv += read(f, &type_size, 4);
 	if (size > max_size)
 		debug("incoming message size %u exceeded maximum buffer size %u\n", size, max_size);
 	u32 data_size = size > 0 ? read(f, data, size) : 0;
 	if (data_size < size)
 		panic("expected payload of size %u, but only received %u bytes\n", size, data_size);
+#ifdef DEBUG
+	if (data_size) {
+		printf("data "); hexdump(data, data_size); printf("\n");
+	}
+#endif
 	return recv + data_size;
 }
 

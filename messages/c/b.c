@@ -15,13 +15,13 @@ int main(int argc, char **argv) {
 		if (tag == 1) {
 			u8 x, y, r;
 			mscanf(buf, "%u %u %b", &x, &y, &r);
-			printf("recv {x=%d, y=%d, r=%d}\n", x, y, r);
+			printf("{x=%d, y=%d, r=%d}\n", x, y, r);
 		} else if (tag == 42) {
 			i32 code;
 			char str[1024];
 			u32 str_len;
-			mscanf(buf, "%I %u[%<=1024]", &code, str, &str_len);
-			printf("recv {code=%d, len=%d}\n", code, str_len);
+			mscanf(buf, "%I %u[%<=10]", &code, str, &str_len);
+			printf("{code=%d, len=%d, str='%s'}\n", code, str_len, str);
 		}
 	}
 
