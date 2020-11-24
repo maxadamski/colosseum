@@ -32,7 +32,7 @@ CREATE TABLE users
     code     VARCHAR(50) NOT NULL UNIQUE,
     password CHAR(226)   NOT NULL,
     nickname VARCHAR(50) NOT NULL UNIQUE,
-    class_id INTEGER     REFERENCES classes (id) ON DELETE SET NULL
+    class_id INTEGER     NOT NULL REFERENCES classes (id) ON DELETE CASCADE
 );
 
 CREATE TABLE teams
@@ -69,7 +69,7 @@ CREATE TABLE games
     subtitle       VARCHAR(100),
     files_path     VARCHAR(1024) UNIQUE,
     deadline       TIMESTAMP   NOT NULL,
-    is_automake       BOOLEAN     NOT NULL,
+    is_automake    BOOLEAN     NOT NULL,
     is_active      BOOLEAN     NOT NULL DEFAULT FALSE,
     environment_id INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE
 );
@@ -79,7 +79,7 @@ CREATE TABLE submissions
     id              SERIAL PRIMARY KEY,
     submission_time TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name            VARCHAR(50) NOT NULL,
-    is_automake        BOOLEAN     NOT NULL,
+    is_automake     BOOLEAN     NOT NULL,
     files_path      VARCHAR(1024) UNIQUE,
     status          VARCHAR(20),
     environment_id  INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE,

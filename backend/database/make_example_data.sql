@@ -10,10 +10,10 @@ VALUES ('python');
 INSERT INTO environments(name)
 VALUES ('cpp');
 
-INSERT INTO games(name, deadline, automake, environment_id)
+INSERT INTO games(name, deadline, is_automake, environment_id)
 VALUES ('pentago', '2022-03-14', TRUE, 1);
 
-INSERT INTO games(name, deadline, automake, environment_id)
+INSERT INTO games(name, deadline, is_automake, environment_id)
 VALUES ('chess', '2021-08-25', FALSE, 2);
 
 -- Password is 'pwd' in all users

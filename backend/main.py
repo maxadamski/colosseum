@@ -66,16 +66,24 @@ async def shutdown():
 #
 
 
-@app.post('/login/user')
+@app.post('/login')
 async def login(user: UserLogin):
-    code, password = user.code, user.password
-    user = db.get_user_by_code(code=code)
-    if not user or not verify_password(password, user['password']):
-        raise BAD_LOGIN
-    key = make_session_token()
-    exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
-    create_session(user_sessions, login=user['code'], key=hashed_token(key), exp=exp, user_id=user['id'])
-    return dict(key=key, exp=exp)
+    login, password = user.login, user.password
+    user = db.get_user_by_code(code=login)
+    if user and verify_password(password, user['password']):
+        key = make_session_token()
+        exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
+        create_session(user_sessions, login=user['code'], key=hashed_token(key), exp=exp, user_id=user['id'])
+        return dict(key=key, exp=exp, is_admin=False)
+    else:
+        admin = db.get_admin(login=login)
+        if admin and verify_password(password, admin['password']):
+            key = make_session_token()
+            exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
+            create_session(admin_sessions, login=admin['login'], key=hashed_token(key), exp=exp, user_id=admin['id'])
+            return dict(key=key, exp=exp, is_admin=True)
+        else:
+            raise BAD_LOGIN
 
 
 #
@@ -245,23 +253,6 @@ async def choose_user_team_primary_submission(id: int, session=Depends(user_sess
 
     db.set_primary_submission(team_id=user_team['id'], submission_id=id)
     return id
-
-
-#
-# Admin authentication endpoints
-#
-
-
-@app.post('/login/admin')
-async def login(admin: AdminPost):
-    login, password = admin.login, admin.password
-    admin = db.get_admin(login=login)
-    if not admin or not verify_password(password, admin['password']):
-        raise BAD_LOGIN
-    key = make_session_token()
-    exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
-    create_session(admin_sessions, login=admin['login'], key=hashed_token(key), exp=exp, user_id=admin['id'])
-    return dict(key=key, exp=exp)
 
 
 #

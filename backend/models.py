@@ -23,7 +23,7 @@ def string_strip_validator(field: str) -> classmethod:
 
 
 class UserLogin(BaseModel):
-    code: str
+    login: str
     password: str
 
     check_strings: classmethod = string_strip_validator('*')
