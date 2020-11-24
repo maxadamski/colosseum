@@ -93,11 +93,11 @@ mscanf(buf, "%I[%<=1024,36,36]", boards, &board_count)
 ```c
 i32  msendf(int f, i8 tag, char const *fmt, ...);
 
-void mscanf(int f, i8 tag, char const *fmt, ...);
+void mscanf(u8 const *data, char const *fmt, ...);
 
-i32  msend(int f, i8 tag, u8 const *buf, u32 buf_size);
+i32  msend(int f, i8 tag, u8 const *buf, u32 size);
 
-i32  mrecv(int f, i8 tag, u8 const *buf, u32 buf_size);
+i32  mrecv(int f, i8 *tag, u8 *buf, u32 size);
 ```
 
 ## Pentago spec
