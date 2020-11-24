@@ -82,7 +82,7 @@ mscanf(buf, "%u %c[%<=128]", &flag, str, &str_len);
 Receive a big array and it's dimensions.
 
 ```c
-i32 boards[1024][36][36];
+i32 boards[36][6][6];
 u32 board_count;
 mscanf(buf, "%I[%<=1024,36,36]", boards, &board_count)
 ```
