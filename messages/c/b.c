@@ -6,23 +6,23 @@
 int main(int argc, char **argv) {
 	int f = open(argv[1], O_RDONLY);
 
-	// message loop
 	u8 buf[4096];
 	i8 tag = 0;
+
+	i32 num;
+	char str[128];
+	u32 str_len;
+
+	// message loop
 	while (1) {
+		timespec t0 = gettime();
 		if (mrecv(f, &tag, buf, 4096) <= 0) continue;
-		printf("recv tag %d\n", tag);
-		if (tag == 1) {
-			u8 x, y, r;
-			mscanf(buf, "%u %u %b", &x, &y, &r);
-			printf("{x=%d, y=%d, r=%d}\n", x, y, r);
-		} else if (tag == 42) {
-			i32 code;
-			char str[1024];
-			u32 str_len;
-			mscanf(buf, "%I %u[%<=10]", &code, str, &str_len);
-			printf("{code=%d, len=%d, str='%s'}\n", code, str_len, str);
-		}
+		mscanf(buf, "%I %u[%<=128]", &num, str, &str_len);
+		timespec t1 = gettime();
+		printf("tag %d {%d, %u, '%.*s'}\n", tag, num, str_len, str_len, str);
+		assert(num == 999);
+		assert(str_len == 13);
+		printf("%ldns elapsed\n", deltatime(t0, t1));
 	}
 
 	close(f);
