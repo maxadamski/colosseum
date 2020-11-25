@@ -153,12 +153,8 @@ i32 msendf(int f, i8 tag, char const *fmt, ...) {
 }
 
 i32 msend(int f, i8 tag, void const *buf, u32 size) {
-    u8 head[9];
-    head[0] = (u8)tag;
-    *(u32*)(head + 1) = 0;
-    *(u32*)(head + 5) = size;
-	i32 sent = write(f, head, 9);
-	if (sent < 9) return -1;
+    i32 sent = write(f, &tag, 1);
+	if (sent < 1) return sent;
 	return write(f, buf, size);
 }
 
