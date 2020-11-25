@@ -17,9 +17,9 @@ int main(int argc, char **argv) {
 	while (1) {
 		timespec t0 = gettime();
 		if (mrecv(f, &tag, buf, 4096) <= 0) continue;
-		mscanf(buf, "%I %u[%<=128]", &num, str, &str_len);
+		mscanf(buf, "%I %c[%<=128]", &num, str, &str_len);
 		timespec t1 = gettime();
-		printf("tag %d {%d, %u, '%.*s'}\n", tag, num, str_len, str_len, str);
+		printf("tag %d <- (%d, %u, '%.*s')\n", tag, num, str_len, str_len, str);
 		assert(num == 999);
 		assert(str_len == 13);
 		printf("%ldns elapsed\n", deltatime(t0, t1));

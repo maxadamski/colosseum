@@ -30,3 +30,4 @@ i64 deltatime(timespec t0, timespec t1);
 
 timespec gettime();
 
+void hexdump(void const *buffer, u32 size);

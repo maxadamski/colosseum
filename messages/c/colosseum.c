@@ -6,15 +6,15 @@ u8 const max_dim = 8;
 u32 const max_types = (4*max_dim+1)*max_fields;
 
 Arg_Type const format_type[] = {
-	['u']=T_U8 , ['U']=T_U32, ['i']=T_I8, ['I']=T_I32, ['f']=T_F32, ['F']=T_F64, ['b']=T_BOOL
+	['u']=T_U8 , ['U']=T_U32, ['i']=T_I8, ['I']=T_I32, ['f']=T_F32, ['F']=T_F64, ['c']=T_CHAR, ['b']=T_BOOL
 };
 
 u32 const format_size[] = {
-	['u']=1, ['U']=4, ['i']=1, ['I']=4, ['f']=4, ['F']=8, ['b']=1
+	['u']=1, ['U']=4, ['i']=1, ['I']=4, ['f']=4, ['F']=8, ['c']=1, ['b']=1
 };
 
 u32 const type_size[] = {
-	[T_U8]=1, [T_U32]=4, [T_I8]=1, [T_I32]=4, [T_F32]=4, [T_F64]=8, [T_BOOL]=1,
+	[T_U8]=1, [T_U32]=4, [T_I8]=1, [T_I32]=4, [T_F32]=4, [T_F64]=8, [T_CHAR]=1, [T_BOOL]=1,
 };
 
 u32 parse_num(char const **fmt) {
@@ -24,12 +24,6 @@ u32 parse_num(char const **fmt) {
 		*fmt += 1;
 	}
 	return res;
-}
-
-void hexdump(void const *buffer, u32 size) {
-	u8 const *bytes = (u8*)buffer;
-	for (u32 i = 0; i < size; i++)
-		printf("%02X ", bytes[i]);
 }
 
 void mscanf(u8 const *buf, char const *fmt, ...) {

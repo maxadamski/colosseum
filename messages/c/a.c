@@ -9,7 +9,7 @@ int main(int argc, char **argv) {
 
 	while (1) {
 		timespec t0 = gettime();
-		if (msendf(f, 42, "%I %u[%]", 999, msg, strlen(msg)) <= 0) continue;
+		if (msendf(f, 42, "%I %c[%]", 999, msg, strlen(msg)) <= 0) continue;
 		timespec t1 = gettime();
 		printf("%ldns elapsed\n", deltatime(t0, t1));
 	}
