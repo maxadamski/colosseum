@@ -153,7 +153,7 @@ i32 msendf(int f, i8 tag, char const *fmt, ...) {
 }
 
 i32 msend(int f, i8 tag, void const *buf, u32 size) {
-	i32 sent = write(f, &tag, 1);
+    i32 sent = write(f, &tag, 1);
 	if (sent < 1) return sent;
 	return write(f, buf, size);
 }
@@ -178,6 +178,11 @@ i32 mrecv(int f, i8 *tag, void *buf, u32 max_size) {
 	//printf("recv "); hexdump(tag, 1); hexdump(&type_size, 4); hexdump(&data_size, 4);
 	//hexdump(buf, pay_size); printf("\n");
 
-	return head_size + pay_size;
+	return pay_size;
 }
 
+i32 mping(int f, i8 tag) {
+	u8 head[9] = {0};
+    head[0] = (u8)tag;
+    return write(f, head, 9);
+}
