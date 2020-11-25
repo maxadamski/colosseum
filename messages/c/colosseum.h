@@ -11,55 +11,17 @@
 #include <stdint.h>
 #include <fcntl.h>
 
-typedef int8_t   Tag;
-
-//msize_t mrecv_size = 0;
-
 typedef enum {
-	T_U8   = 0x00, T_U32  = 0x01, T_I8   = 0x02, T_I32 = 0x03,
-	T_F32  = 0x04, T_F64  = 0x05, T_BOOL = 0x06,
-	T_ARR  = 0x10,
+	T_U8   = 0x00, T_U16 = 0x01, T_U32  = 0x02, T_U64  = 0x03,
+	T_I8   = 0x04, T_I16 = 0x05, T_I32  = 0x06, T_I64  = 0x07,
+	T_F32  = 0x08, T_F64 = 0x09, T_CHAR = 0x0A, T_BOOL = 0x0B,
 } Arg_Type;
 
-extern u32 const type_size[];
+i32 msendf(int f, i8 tag, char const *fmt, ...);
 
-extern Arg_Type const format_type[];
+void mscanf(u8 const *buf, char const *fmt, ...);
 
-extern u32 const format_size[];
+i32 msend(int f, i8 tag, void const *buf, u32 size);
 
-/** Typed send
- *
- *
- */
-i32 msendf(int f, Tag tag, char const *fmt, ...);
+i32 mrecv(int f, i8 *tag, void *buf, u32 size);
 
-/** Typed recv waits for message of a given tag
- *
- *
- */
-i32 mrecvf(int f, Tag tag, char const *fmt, ...);
-
-/** Low-level send (without splitting arguments), returns bytes written
- *
- *
- */
-i32 msend(int f, Tag tag, void const *data, u32 size);
-
-
-/** Low-level function to receive any message
- *  @param tag - incoming message tag
- *  @param buffer - incoming message payload
- *  @param size - maximum buffer size
- *  @returns buffer size
- */
-i32 mrecv(int f, Tag *tag, void *data, u32 size);
-
-
-/**
- *  Low-level function to receive a message with a given tag
- *  @param tag - expected message tag
- *  @param buffer - incoming message payload
- *  @param size - maximum buffer size
- *  @returns buffer size
- */
-i32 mrecvt(int f, Tag tag, void *data, u32 size);

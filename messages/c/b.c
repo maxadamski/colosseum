@@ -5,21 +5,24 @@
 
 int main(int argc, char **argv) {
 	int f = open(argv[1], O_RDONLY);
-	u32 const max_size = 1024;
-	char msg[max_size];
-	u32 msg_size;
-	i32 number;
 
+	u8 buf[4096];
+	i8 tag = 0;
+
+	i32 num;
+	char str[128];
+	u32 str_len;
+
+	// message loop
 	while (1) {
-		number = 0;
-		msg[0] = '\0';
-
 		timespec t0 = gettime();
-		if (mrecvf(f, 42, "%I %u[%]", &number, msg, &msg_size) < 0) continue;
+		if (mrecv(f, &tag, buf, 4096) <= 0) continue;
+		mscanf(buf, "%I %c[%<=128]", &num, str, &str_len);
 		timespec t1 = gettime();
-		assert(number == 1024);
-		assert(strcmp(msg, "Hello, World!") != 0);
-		printf("recv (%ldns elapsed)\n", deltatime(t0, t1));
+		printf("tag %d <- (%d, %u, '%.*s')\n", tag, num, str_len, str_len, str);
+		assert(num == 999);
+		assert(str_len == 13);
+		printf("%ldns elapsed\n", deltatime(t0, t1));
 	}
 
 	close(f);

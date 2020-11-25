@@ -1,8 +1,10 @@
-import colosseum as col
+import colosseum as co
+from time import time
 from sys import argv
 
-f = col.open(argv[1], 'w')
+f = co.open(argv[1], 'w')
 while True:
-    data, tag = 'hello, world!', 42
-    col.send(f, data, tag)
-    print(f'--> {data} [tag {tag}, size {len(data)}]')
+    t = time()
+    co.send(f, 42, (999, co.i32), 'Hello, World!')
+    t = time() - t
+    print(f'elapsed {t*1e9:.0f}ns')

@@ -5,11 +5,11 @@
 #include <assert.h>
 #include <time.h>
 
-#ifdef DEBUG
 #define panic(fmt, args...) do { fprintf(stderr, "[error %s -> %s] " fmt, __FILE__, __func__, ##args); exit(1); } while (0)
+
+#ifdef DEBUG
 #define debug(fmt, args...) do { fprintf(stderr, fmt, ##args); } while (0)
 #else
-#define panic(fmt, args...) do {} while(0)
 #define debug(fmt, args...) do {} while(0)
 #endif
 
@@ -30,3 +30,4 @@ i64 deltatime(timespec t0, timespec t1);
 
 timespec gettime();
 
+void hexdump(void const *buffer, u32 size);
