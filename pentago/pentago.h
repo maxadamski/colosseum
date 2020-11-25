@@ -10,8 +10,10 @@ typedef enum {
 } PentagoError;
 
 typedef enum {
-    MSG_NONE      = 0,
-    MSG_MAKE_MOVE = 1,
+    MSG_NONE        = 0,
+    MSG_MAKE_MOVE   = 1,
+    MSG_COMMIT_MOVE = 2,
+    MSG_GET_MOVES   = 3,
 } PentagoMsg;
 
 typedef struct {

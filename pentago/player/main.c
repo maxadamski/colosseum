@@ -1,14 +1,35 @@
 #define _POSIX_C_SOURCE 199309L
 #define DEBUG
 #include <stdio.h>
-#include <stdint.h>
 #include <assert.h>
 
 #include "pentago.c"
 #include "colosseum.c"
 
 int main(int argc, char **argv) {
-    int msgout  = open(argv[1], O_WRONLY);
+    srand(time(0));
+    int in  = open(argv[1], O_RDONLY);
+    int out = open(argv[2], O_WRONLY);
 
-    i32 res = msendf(msgout, MSG_MAKE_MOVE, "%b %i %i", (u8)1, (i8)2, (i8)3);
+    u8 buf[0x1000];
+    i32 i_count, j_count, r_count;
+    u8 i[1024];
+    u8 j[1024];
+    u8 r[1024];
+
+    while (1) {
+        i32 res = mping(out, MSG_GET_MOVES);
+        i8 tag;
+        res = mrecv(in, &tag, buf, 0x1000);
+        assert(tag == MSG_GET_MOVES);
+        mscanf(buf, "%u[%<=1024] %u[%<=1024] %u[%<=1024]",
+                i, &i_count,
+                j, &j_count,
+                r, &r_count);
+        assert(i_count == j_count && j_count == r_count);
+
+        u32 move = rand() % i_count;
+        //res = msendf(out, MSG_COMMIT_MOVE, "%u %u %u", 1, 2, ROTATION_TOP_LEFT_CW);
+        res = msendf(out, MSG_COMMIT_MOVE, "%u %u %u", i[move], j[move], r[move]);
+    }
 }
