@@ -178,6 +178,6 @@ i32 mrecv(int f, i8 *tag, void *buf, u32 max_size) {
 	//printf("recv "); hexdump(tag, 1); hexdump(&type_size, 4); hexdump(&data_size, 4);
 	//hexdump(buf, pay_size); printf("\n");
 
-	return head_size + pay_size;
+	return pay_size;
 }
 
