@@ -25,3 +25,4 @@ i32 msend(int f, i8 tag, void const *buf, u32 size);
 
 i32 mrecv(int f, i8 *tag, void *buf, u32 size);
 
+i32 mping(int f, i8 tag);
