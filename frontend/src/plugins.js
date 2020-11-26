@@ -38,10 +38,10 @@ export const SimpleApi = {
             }
 
             if (method !== 'GET') {
-                args['body'] = JSON.stringify(data)
+                args['body'] = typeof data === 'object' && data !== null ? JSON.stringify(data) : data
             }
 
-            return await fetch(url, args)
+            return fetch(url, args).then(res => [res, null]).catch(err => [null, err])
         }
     }
 }

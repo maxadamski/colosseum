@@ -1,12 +1,17 @@
 <script>
+import { now, datediff } from '../common'
+
 export default {
     name: 'Index',
     data: () => ({
+        tab: 'overview',
         tabs: ['overview', 'rules', 'play', 'team', 'submit'],
-        tab: 'submit',
         players: ['Naive Player', 'Smart Player', 'Tricky Player'],
         player: 'Naive Player',
+        submitEnv: 'C++',
+        execution: 'auto',
         teamName: 'Foobar',
+        firstPlayer: 'you',
         teamMembers: [
             {name: 'Max', leader: true, awaiting: false, id: '1'},
             {name: 'Piotr', leader: false, awaiting: false, id: '2'},
@@ -25,27 +30,35 @@ export default {
         game: 'Pentago',
         timeLeft: '2 months'
     }),
+    computed: {
+        deadlineCountdown() {
+            const dt = datediff(now(), this.$s.game.deadline) 
+            let res = ''
+            const plural = (x) => x == 1 ? '' : 's'
+            if (dt.months > 0) res += `${dt.months} month${plural(dt.months)}`
+            if (dt.days > 0) res += ` ${dt.days} day` + plural(dt.days)
+            if (!res) res += `${dt.hours} hour${plural(dt.hours)} and ${dt.minutes} minute${plural(dt.minutes)}`
+            return res
+        },
+    }
 }
 </script>
 
 <template lang="pug">
 div
-    h1.mb-0 {{ game }}
-    h4 Win in a two-player match
-    span time left 
-        b {{ timeLeft }}
+    h1.mb-0 {{ $s.game.name }}
+    h4 {{ $s.game.description }}
+    b {{ deadlineCountdown }} left
 
 
     nav.tabs
         button(v-for='x in tabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
 
     div(v-if='tab == "overview"')
-        h2 Overview of the game
-        p A rendered markdown document
+        div(v-html='$s.game.overview')
 
     div(v-if='tab == "rules"')
-        h2 Rules of the game
-        p A rendered markdown document
+        div(v-html='$s.game.rules')
 
     div(v-if='tab == "play"')
         h3 Interactive Game
@@ -54,19 +67,20 @@ div
             .vflex
                 h4 Player
                 .select
-                    select
-                        option(v-for='x in players' :selected='player == x') {{x}}
+                    select(v-model='player')
+                        option(v-for='x in players') {{x}}
             .vflex
                 h4 First player
                 .hflex.hlist-3
                     label.input-radio
-                        input(type='radio')
-                        | You
+                        input(type='radio' v-model='firstPlayer' value='you')
+                        span You
                     label.input-radio
-                        input(type='radio')
-                        | Them
+                        input(type='radio' v-model='firstPlayer' value='them')
+                        span Them
 
-        .widget Custom Game Widget
+        .widget
+            div(v-html='$s.game.widget')
 
 
     div(v-if='tab == "team"')
@@ -78,28 +92,28 @@ div
             button Save
 
         h4 Team Members
-        .rounded.w-50
-            table
-                tr
-                    th User
-                    th Status
-                    th Actions
-                tr(v-for="member in teamMembers" v-bind:key="member.id")
-                    td {{ member.name}}
+        table
+            tr
+                th User
+                th Status
+                th Actions
 
-                    td(v-if="member.leader") Leader 
-                    td(v-else-if="member.awaiting") Invited
-                    td(v-else) Member
+            tr(v-for="member in teamMembers" :key="member.id")
+                td {{ member.name}}
 
-                    td(v-if="!member.leader && !member.awaiting") 
-                        button Set Leader
-                    td(v-else-if="member.awaiting")
-                        button Cancel Invite
-                    td(v-else)
+                td(v-if="member.leader") Leader 
+                td(v-else-if="member.awaiting") Invited
+                td(v-else) Member
+
+                td(v-if="!member.leader && !member.awaiting") 
+                    button Set Leader
+                td(v-else-if="member.awaiting")
+                    button Cancel Invite
+                td(v-else)
 
         h3 Invitations
         .hflex.hlist-3.fy-center
-            span(v-for="invitation in invitations" v-bind:key="invitation.id") 
+            span(v-for="invitation in invitations" :key="invitation.id") 
                 b {{ invitation.inviting }} 
                 span invited you to team 
                 b {{ invitation.team }}
@@ -125,18 +139,17 @@ div
             .vflex
                 h4 Environment
                 .select
-                    select
-                        option Python3
-                        option C++
+                    select(v-model='submitEnv')
+                        option(v-for='env in $s.envs') {{env}}
 
             .vflex
                 h4 Execution
                 .hflex.hlist-3
                     label.input-radio
-                        input(type='radio' name='gofirst')
+                        input(type='radio' v-model='execution' value='auto')
                         span Auto
                     label.input-radio
-                        input(type='radio' name='gofirst')
+                        input(type='radio' v-model='execution' value='make')
                         span Makefile
 
             .vflex
@@ -156,7 +169,7 @@ div
                 th Score
                 th Actions
 
-            tr(v-for='sub in submissions' v-bind:key='sub.id')
+            tr(v-for='sub in submissions' :key='sub.id')
                 td
                     span(v-if='sub.id == primarySub')
                         b.tooltip(title="This is your team's primary submission. Your final grade will depend on the performance of this submission") {{sub.id}}*
@@ -181,6 +194,7 @@ div
         all unset
         flex-basis 100%
         text-align center
+        border none
         border-bottom 1px solid decor-color
         height 32px
         font-size 0.8em
