@@ -1,8 +1,8 @@
 #!/bin/bash
-rm judge
+rm -f judge
 make
 pushd ../player
-rm player
+rm -f player
 make
 popd
 rm -f f1 f2 f3 f4

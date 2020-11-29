@@ -159,6 +159,56 @@ int main() {
         free_moves(&moves);
         TEST(test, "near full board available moves");
     }
+    {
+        Pentago game, empty;
+        pentago_create(&game, 6);
+        pentago_create(&empty, 6);
+        PentagoMove moves[] = {
+            {1, 2, 0},
+            {3, 2, 1},
+            {5, 0, 5},
+            {4, 4, 2},
+        };
+        int32_t moves_count = sizeof(moves) / sizeof(PentagoMove);
+        for (int32_t i = 0; i < moves_count; i++) {
+            PentagoMove move = moves[i];
+            make_move(&game, move.i, move.j, move.rotation);
+        }
+        for (int32_t i = moves_count-1; i >= 0; i--) {
+            PentagoMove move = moves[i];
+            undo_move(&game, move.i, move.j, move.rotation);
+        }
+
+
+        size_t size = game.board_size * game.board_size;
+        int test = (0 == memcmp(game.board, empty.board, size));
+        TEST(test, "undo moves");
+        pentago_destroy(&game);
+        pentago_destroy(&empty);
+    }
+    {
+        Pentago game = {0};
+        pentago_create(&game, 6);
+        game.current_player = 'B';
+        strcpy(game.board,
+                "BWWBWW"
+                "BBWBBB"
+                "BWWWWB"
+                "BWWWWB"
+                "WBBBWB"
+                "WBW.BW\0");
+        PentagoMoves moves = get_available_moves(&game);
+        int32_t moves_with_result = 0;
+        for (int32_t i = 0; i < moves.count; i++) {
+            make_move(&game, moves.i[i], moves.j[i], moves.rotation[i]);
+            if (game.winner) moves_with_result++;
+            else printf("move %d: no winner\n", i);
+            undo_move(&game, moves.i[i], moves.j[i], moves.rotation[i]);
+        }
+        free_moves(&moves);
+        pentago_destroy(&game);
+        TEST(moves_with_result == 8, "final moves set winner to either player or a draw");
+    }
 
     printf("%d / %d tests passed\n", passed, tests);
     if (passed == tests) {

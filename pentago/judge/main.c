@@ -5,6 +5,9 @@
 #include <stdbool.h>
 #include <assert.h>
 
+#define STB_DS_IMPLEMENTATION
+#include "stb_ds.h"
+
 #include "pentago.c"
 #include "colosseum.c"
 
@@ -19,12 +22,12 @@ inline timespec get_time() {
 
 timespec time_diff(timespec start, timespec end) {
     timespec temp;
-    if ((end.tv_nsec-start.tv_nsec)<0) {
-        temp.tv_sec = end.tv_sec-start.tv_sec-1;
-        temp.tv_nsec = 1000000000+end.tv_nsec-start.tv_nsec;
+    if (end.tv_nsec < start.tv_nsec) {
+        temp.tv_sec  = end.tv_sec - start.tv_sec - 1;
+        temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
     } else {
-        temp.tv_sec = end.tv_sec-start.tv_sec;
-        temp.tv_nsec = end.tv_nsec-start.tv_nsec;
+        temp.tv_sec  = end.tv_sec - start.tv_sec;
+        temp.tv_nsec = end.tv_nsec - start.tv_nsec;
     }
     return temp;
 }
@@ -34,13 +37,38 @@ inline bool time_less_than(timespec a, timespec b) {
     return res.tv_sec < 0 || res.tv_nsec < 0;
 }
 
-void handle_player(int in, int out, Pentago *game, f32 timeout) {
+typedef struct {
+    int in;
+    int out;
+    Pentago game;
+    PentagoMove *stack;
+} Player;
+
+typedef enum {
+    PLAYER_OK      = 0,
+    PLAYER_ILLEGAL = 1,
+    PLAYER_TIMEOUT = 2,
+} HandlePlayerResult;
+
+HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
+    int in  = p->in;
+    int out = p->out;
+
+    // prepare player's local copy of the game
+    i32 size = game->board_size * game->board_size;
+    memcpy(p->game.board, game->board, size);
+    p->game.current_player = game->current_player;
+    p->game.winner = game->winner;
+    p->game.board_size = game->board_size;
+    arrsetlen(p->stack, 0);
+
     bool done = false;
     while (!done) {
         i8 tag;
         u8 buffer[0x1000] = {};
         i32 received = mrecv(out, &tag, buffer, 0x1000);
         // TODO(piotr): check whether the received size matches the tag
+        // TODO(piotr): check timeout
 
         switch (tag) {
             case MSG_COMMIT_MOVE: {
@@ -49,22 +77,68 @@ void handle_player(int in, int out, Pentago *game, f32 timeout) {
                 printf("Player %c: (%u, %u) %u\n", game->current_player, i, j, rotation);
                 PentagoError err = make_move(game, i, j, rotation);
                 if (err) {
-                    game->winner = other_player(game->current_player);
+                    printf("MSG_COMMIT_MOVE error %d\n", err);
+                    return PLAYER_ILLEGAL;
                 }
                 done = true;
             } break;
 
             case MSG_GET_MOVES: {
-                PentagoMoves moves = get_available_moves(game);
-                if (moves.count == 0) return;
+                PentagoMoves moves;
+                moves = get_available_moves(&p->game);
+                if (moves.count == 0) {
+                    printf("MSG_GET_MOVES error: no moves available\n");
+                    return PLAYER_ILLEGAL;
+                }
                 msendf(in, MSG_GET_MOVES, "%u[%] %u[%] %u[%]",
                         moves.i, moves.count,
                         moves.j, moves.count,
                         moves.rotation, moves.count);
                 free_moves(&moves);
             } break;
+
+            case MSG_MAKE_MOVE: {
+                u8 i, j, rotation;
+                mscanf(buffer, "%u %u %u", &i, &j, &rotation);
+                int no_rotation = 0;
+                make_move_(&p->game, i, j, rotation, &no_rotation);
+                if (no_rotation) rotation = 8;
+                PentagoMove move = {i, j, rotation};
+                arrpush(p->stack, move);
+            } break;
+
+            case MSG_UNDO_MOVE: {
+                if (arrlen(p->stack) == 0) {
+                    puts("MSG_UNDO_MOVE error: no move to undo");
+                    return PLAYER_ILLEGAL;
+                }
+                PentagoMove move = arrpop(p->stack);
+                PentagoError err;
+                err = undo_move(&p->game, move.i, move.j, move.rotation);
+                if (err) {
+                    printf("undoing move (%u, %u) %u\n", move.i, move.j, move.rotation);
+                    printf("ERR %d\n", err);
+                    return PLAYER_ILLEGAL;
+                }
+            } break;
+
+            case MSG_GET_WINNER: {
+                msendf(in, MSG_GET_WINNER, "%u", p->game.winner);
+            } break;
+
+            case MSG_GET_BOARD: {
+                i32 res = msendf(in, MSG_GET_BOARD, "%u[%,%]", p->game.board,
+                        p->game.board_size, p->game.board_size);
+                //printf("sending board, sent %d bytes\n", res);
+            } break;
+
+            case MSG_GET_PLAYER: {
+                msendf(in, MSG_GET_PLAYER, "%u", p->game.current_player);
+            } break;
         }
     }
+
+    return PLAYER_OK;
 }
 
 int main(int argc, char **argv) {
@@ -88,12 +162,31 @@ int main(int argc, char **argv) {
         return 1;
     }
 
+    // initialize a local copy of the game for each player
+    Pentago p1_game, p2_game;
+    pentago_create(&p1_game, board_size);
+    pentago_create(&p2_game, board_size);
+
+    Player p1 = {p1_in, p1_out, p1_game, NULL};
+    Player p2 = {p2_in, p2_out, p2_game, NULL};
+
+    // TODO(piotr): handle illegal behavior correctly
+    HandlePlayerResult res;
     while (!game.winner) {
-        handle_player(p1_in, p1_out, &game, timeout);
+        res = handle_player(&p1, &game, timeout);
         board_print(&game);
+        if (res) {
+            puts("PLAYER 1 ILLEGAL");
+            break;
+        }
         if (game.winner) break;
-        handle_player(p2_in, p2_out, &game, timeout);
+        res = handle_player(&p2, &game, timeout);
         board_print(&game);
+        if (res) {
+            puts("PLAYER 2 ILLEGAL");
+            break;
+        }
     }
+    // TODO(piotr): print result correctly
     printf("Winner: %c\n", game.winner);
 }

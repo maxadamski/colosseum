@@ -14,6 +14,10 @@ typedef enum {
     MSG_MAKE_MOVE   = 1,
     MSG_COMMIT_MOVE = 2,
     MSG_GET_MOVES   = 3,
+    MSG_UNDO_MOVE   = 4,
+    MSG_GET_WINNER  = 5,
+    MSG_GET_BOARD   = 6,
+    MSG_GET_PLAYER  = 7,
 } PentagoMsg;
 
 typedef struct {
@@ -36,6 +40,9 @@ typedef struct {
     char winner;
 } Pentago;
 
+// bit 0 - clockwise or counter-clockwise
+// bit 1 - left or right half of the board
+// bit 2 - top or bottom half of the board
 #define ROTATION_TOP_LEFT_CW   0b000
 #define ROTATION_TOP_LEFT_CCW  0b001
 #define ROTATION_TOP_RIGHT_CW  0b010
@@ -44,6 +51,12 @@ typedef struct {
 #define ROTATION_BOT_LEFT_CCW  0b101
 #define ROTATION_BOT_RIGHT_CW  0b110
 #define ROTATION_BOT_RIGHT_CCW 0b111
+
+typedef struct {
+    uint8_t i;
+    uint8_t j;
+    uint8_t rotation;
+} PentagoMove;
 
 typedef struct {
     int32_t count;
@@ -59,6 +72,7 @@ void pentago_destroy(Pentago *game);
 char other_player(char player);
 char * board_get(Pentago *game, uint8_t i, uint8_t j);
 PentagoError make_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation);
+PentagoError undo_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation);
 char get_winner(Pentago *game);
 void board_print(Pentago *game);
 PentagoMoves get_available_moves(Pentago *game);

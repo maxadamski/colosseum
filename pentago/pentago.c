@@ -60,6 +60,7 @@ void rotate_square_right(Pentago *game, uint8_t i, uint8_t j, uint8_t size) {
 }
 
 void board_rotate(Pentago *game, uint8_t rotation) {
+    if (rotation > 7) return;
     uint8_t tile_size = game->board_size / 2;
     uint8_t i = (rotation & 4) ? tile_size : 0;
     uint8_t j = (rotation & 2) ? tile_size : 0;
@@ -79,9 +80,9 @@ void board_rotate(Pentago *game, uint8_t rotation) {
     }
 }
 
-PentagoError make_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation) {
+PentagoError make_move_(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation, int *no_rotation) {
     // TODO(piotr): more error checking
-    if (rotation & ~7) {
+    if (rotation > 7) {
         return PERR_BAD_ARGUMENT;
     }
     char *field = board_get(game, i, j);
@@ -91,11 +92,35 @@ PentagoError make_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation) {
     *field = game->current_player;
     if (get_winner(game) == game->current_player) {
         game->winner = game->current_player;
+        game->current_player = other_player(game->current_player);
+        if (no_rotation) *no_rotation = 1;
         return PERR_OK;
     }
     board_rotate(game, rotation);
     game->current_player = other_player(game->current_player);
     game->winner = get_winner(game);
+    return PERR_OK;
+}
+
+PentagoError make_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation) {
+    return make_move_(game, i, j, rotation, 0);
+}
+
+PentagoError undo_move(Pentago *game, uint8_t i, uint8_t j, uint8_t rotation) {
+    if (rotation > 8) {
+        return PERR_BAD_ARGUMENT;
+    }
+    uint8_t reverse_rotation = rotation ^ 1;
+    board_rotate(game, reverse_rotation);
+    char *field = board_get(game, i, j);
+    if (*field != other_player(game->current_player)) {
+        board_rotate(game, rotation);
+        return PERR_ILLEGAL_MOVE;
+    }
+    *field = '.';
+    game->current_player = other_player(game->current_player);
+    game->winner = 0;
+    return PERR_OK;
 }
 
 // helper function for get_winner
@@ -179,6 +204,20 @@ char get_winner(Pentago *game) {
     if      (white_wins && black_wins)  result = 'D';
     else if (white_wins && !black_wins) result = 'W';
     else if (!white_wins && black_wins) result = 'B';
+    else {
+        int32_t empty_fields = 0;
+        for (int32_t i = 0; i < size; i++) {
+            for (int32_t j = 0; j < size; j++) {
+                if (*board_get(game, i, j) == '.') {
+                    empty_fields++;
+                    break;
+                }
+            }
+            if (empty_fields) break;
+        }
+        if (empty_fields == 0) result = 'D';
+    }
+
     return result;
 }
 
