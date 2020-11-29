@@ -29,8 +29,8 @@ class UserLogin(BaseModel):
     check_strings: classmethod = string_strip_validator('*')
 
 
-class UserPost(BaseModel):
-    code: str
+class StudentPost(BaseModel):
+    login: str
     password: str
     nickname: str
     class_id: int
@@ -38,8 +38,8 @@ class UserPost(BaseModel):
     check_strings: classmethod = string_strip_validator('*')
 
 
-class UserPatch(BaseModel):
-    code: Optional[str] = None
+class StudentPatch(BaseModel):
+    login: Optional[str] = None
     password: Optional[str] = None
     nickname: Optional[str] = None
     class_id: Optional[int] = None
@@ -47,14 +47,14 @@ class UserPatch(BaseModel):
     check_strings: classmethod = string_strip_validator('*')
 
 
-class AdminPost(BaseModel):
+class TeacherPost(BaseModel):
     login: str
     password: str
 
     check_strings: classmethod = string_strip_validator('*')
 
 
-class AdminPatch(BaseModel):
+class TeacherPatch(BaseModel):
     login: Optional[str] = None
     password: Optional[str] = None
 

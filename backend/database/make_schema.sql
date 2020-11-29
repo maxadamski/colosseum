@@ -1,59 +1,59 @@
-DROP TABLE IF EXISTS admins CASCADE;
-DROP TABLE IF EXISTS classes CASCADE;
+DROP TABLE IF EXISTS teachers CASCADE;
+DROP TABLE IF EXISTS groups CASCADE;
+DROP TABLE IF EXISTS students CASCADE;
 DROP TABLE IF EXISTS teams CASCADE;
-DROP TABLE IF EXISTS users CASCADE;
-DROP TABLE IF EXISTS team_leaders CASCADE;
-DROP TABLE IF EXISTS team_users CASCADE;
-DROP TABLE IF EXISTS team_invites CASCADE;
+DROP TABLE IF EXISTS team_members CASCADE;
+DROP TABLE IF EXISTS team_invitations CASCADE;
 DROP TABLE IF EXISTS environments CASCADE;
 DROP TABLE IF EXISTS games CASCADE;
-DROP TABLE IF EXISTS submissions CASCADE;
-DROP TABLE IF EXISTS team_primary_submissions CASCADE;
-DROP TABLE IF EXISTS results CASCADE;
+DROP TABLE IF EXISTS team_submissions CASCADE;
+DROP TABLE IF EXISTS ref_submissions CASCADE;
+DROP TABLE IF EXISTS tournament_results CASCADE;
+DROP TABLE IF EXISTS ref_results CASCADE;
 
 DROP TYPE IF EXISTS STATUS;
 
-CREATE TABLE admins
+CREATE TABLE teachers
 (
     id       SERIAL PRIMARY KEY,
     login    VARCHAR(50) NOT NULL UNIQUE,
     password CHAR(226)   NOT NULL
 );
 
-CREATE TABLE classes
+CREATE TABLE groups
 (
     id   SERIAL PRIMARY KEY,
     name VARCHAR(20) NOT NULL UNIQUE
 );
 
-CREATE TABLE users
+CREATE TABLE students
 (
     id       SERIAL PRIMARY KEY,
-    code     VARCHAR(50) NOT NULL UNIQUE,
+    login    VARCHAR(50) NOT NULL UNIQUE,
     password CHAR(226)   NOT NULL,
     nickname VARCHAR(50) NOT NULL UNIQUE,
-    class_id INTEGER     NOT NULL REFERENCES classes (id) ON DELETE CASCADE
+    group_id INTEGER     NOT NULL REFERENCES groups (id) ON DELETE CASCADE
 );
 
 CREATE TABLE teams
 (
     id        SERIAL PRIMARY KEY,
     name      VARCHAR(50) NOT NULL UNIQUE,
-    leader_id INTEGER     REFERENCES users (id) ON DELETE SET NULL
+    leader_id INTEGER     REFERENCES students (id) ON DELETE SET NULL
 );
 
-CREATE TABLE team_users
+CREATE TABLE team_members
 (
-    team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    UNIQUE (team_id, user_id)
+    team_id    INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+    UNIQUE (team_id, student_id)
 );
 
-CREATE TABLE team_invites
+CREATE TABLE team_invitations
 (
-    team_id INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
-    user_id INTEGER NOT NULL REFERENCES users (id) ON DELETE CASCADE,
-    UNIQUE (team_id, user_id)
+    team_id    INTEGER NOT NULL REFERENCES teams (id) ON DELETE CASCADE,
+    student_id INTEGER NOT NULL REFERENCES students (id) ON DELETE CASCADE,
+    UNIQUE (team_id, student_id)
 );
 
 CREATE TABLE environments
@@ -66,7 +66,7 @@ CREATE TABLE games
 (
     id             SERIAL PRIMARY KEY,
     name           VARCHAR(50) NOT NULL UNIQUE,
-    subtitle       VARCHAR(100),
+    description       VARCHAR(100),
     files_path     VARCHAR(1024) UNIQUE,
     deadline       TIMESTAMP   NOT NULL,
     is_automake    BOOLEAN     NOT NULL,
@@ -74,7 +74,19 @@ CREATE TABLE games
     environment_id INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE
 );
 
-CREATE TABLE submissions
+CREATE TABLE team_submissions
+(
+    id              SERIAL PRIMARY KEY,
+    submission_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    is_automake     BOOLEAN   NOT NULL,
+    files_path      VARCHAR(1024) UNIQUE,
+    status          VARCHAR(20),
+    is_primary      BOOLEAN   NOT NULL DEFAULT FALSE,
+    environment_id  INTEGER   NOT NULL REFERENCES environments (id) ON DELETE CASCADE,
+    team_id         INTEGER REFERENCES teams (id) ON DELETE CASCADE
+);
+
+CREATE TABLE ref_submissions
 (
     id              SERIAL PRIMARY KEY,
     submission_time TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -83,48 +95,47 @@ CREATE TABLE submissions
     files_path      VARCHAR(1024) UNIQUE,
     status          VARCHAR(20),
     environment_id  INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE,
-    team_id         INTEGER REFERENCES teams (id) ON DELETE CASCADE,
-    admin_id        INTEGER REFERENCES admins (id) ON DELETE CASCADE,
-    CONSTRAINT check_team_teacher CHECK (
-            (team_id IS NULL AND admin_id IS NOT NULL)
-            OR (team_id IS NOT NULL AND admin_id IS NULL) )
+    teacher_id      INTEGER REFERENCES teachers (id) ON DELETE CASCADE,
+    game_id         INTEGER REFERENCES games (id) ON DELETE CASCADE
 );
 
-CREATE TABLE team_primary_submissions
-(
-    team_id       INTEGER NOT NULL UNIQUE REFERENCES teams (id) ON DELETE CASCADE,
-    submission_id INTEGER NOT NULL REFERENCES submissions (id) ON DELETE CASCADE,
-    UNIQUE (team_id, submission_id)
-);
-
-CREATE TABLE results
+CREATE TABLE tournament_results
 (
     id                   SERIAL PRIMARY KEY,
     result               INTEGER   NOT NULL,
     execution_time       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    first_submission_id  INTEGER   REFERENCES submissions (id) ON DELETE SET NULL,
-    second_submission_id INTEGER   REFERENCES submissions (id) ON DELETE SET NULL
+    first_submission_id  INTEGER   REFERENCES team_submissions (id) ON DELETE SET NULL,
+    second_submission_id INTEGER   REFERENCES team_submissions (id) ON DELETE SET NULL
 );
 
-DROP PROCEDURE IF EXISTS create_user_team(user_id INT, user_nickname VARCHAR);
+CREATE TABLE ref_results
+(
+    id             SERIAL PRIMARY KEY,
+    result         INTEGER   NOT NULL,
+    execution_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    submission_id  INTEGER   REFERENCES team_submissions (id) ON DELETE SET NULL,
+    reference_id   INTEGER   REFERENCES ref_submissions (id) ON DELETE SET NULL
+);
 
-CREATE OR REPLACE PROCEDURE create_user_team(user_id INT, user_nickname VARCHAR)
+DROP PROCEDURE IF EXISTS create_student_team(student_id INT, student_nickname VARCHAR);
+
+CREATE OR REPLACE PROCEDURE create_student_team(student_id INT, student_nickname VARCHAR)
 AS
 $BODY$
 DECLARE
-    new_team_id user_id%TYPE;
+    new_team_id student_id%TYPE;
     team_idx    INTEGER := 1;
 BEGIN
-    WHILE ((SELECT id FROM teams WHERE name LIKE user_nickname::TEXT || ' team ' || team_idx::TEXT) IS NOT NULL)
+    WHILE ((SELECT id FROM teams WHERE name LIKE student_nickname::TEXT || ' team ' || team_idx::TEXT) IS NOT NULL)
         LOOP
             team_idx := team_idx + 1;
         END LOOP;
     INSERT INTO teams(name, leader_id)
-    VALUES (user_nickname::TEXT || ' team ' || team_idx::TEXT, user_id)
+    VALUES (student_nickname::TEXT || ' team ' || team_idx::TEXT, student_id)
     RETURNING id INTO new_team_id;
 
-    INSERT INTO team_users(team_id, user_id)
-    VALUES (new_team_id, user_id);
+    INSERT INTO team_members(team_id, student_id)
+    VALUES (new_team_id, student_id);
 END;
 $BODY$
     LANGUAGE plpgsql;
@@ -133,17 +144,17 @@ DROP FUNCTION IF EXISTS create_initial_team;
 CREATE FUNCTION create_initial_team() RETURNS TRIGGER AS
 $BODY$
 BEGIN
-    CALL create_user_team(new.id, new.code);
+    CALL create_student_team(new.id, new.login);
     RETURN NULL;
 END;
 $BODY$
     LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trig_user_added ON users;
+DROP TRIGGER IF EXISTS trig_student_added ON students;
 
-CREATE TRIGGER trig_user_added
+CREATE TRIGGER trig_student_added
     AFTER INSERT
-    ON users
+    ON students
     FOR EACH ROW
 EXECUTE PROCEDURE create_initial_team();
 
@@ -151,12 +162,12 @@ DROP FUNCTION IF EXISTS manage_team_leaders;
 CREATE FUNCTION manage_team_leaders() RETURNS TRIGGER AS
 $BODY$
 DECLARE
-    new_leader_id      users.id%TYPE;
-    user_team_nickname users.nickname%TYPE;
+    new_leader_id         students.id%TYPE;
+    student_team_nickname students.nickname%TYPE;
 BEGIN
-    IF (SELECT id FROM teams WHERE leader_id = old.user_id) IS NOT NULL THEN
-        SELECT user_id
-        FROM team_users
+    IF (SELECT id FROM teams WHERE leader_id = old.student_id) IS NOT NULL THEN
+        SELECT student_id
+        FROM team_members
         WHERE team_id = old.team_id FETCH FIRST ROW ONLY
         INTO new_leader_id;
 
@@ -171,20 +182,22 @@ BEGIN
         END IF;
     END IF;
     IF (tg_op = 'DELETE') THEN
-        SELECT nickname FROM users WHERE id = old.user_id INTO user_team_nickname;
-        CALL create_user_team(old.user_id, user_team_nickname);
+        SELECT nickname FROM students WHERE id = old.student_id INTO student_team_nickname;
+        IF student_team_nickname IS NOT NULL THEN
+            CALL create_student_team(old.student_id, student_team_nickname);
+        END IF;
     END IF;
     RETURN NULL;
 END;
 $BODY$
     LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trig_team_changed ON team_users;
+DROP TRIGGER IF EXISTS trig_team_changed ON team_members;
 
 CREATE TRIGGER trig_team_changed
     AFTER UPDATE
         OF team_id OR DELETE
-    ON team_users
+    ON team_members
     FOR EACH ROW
 EXECUTE PROCEDURE manage_team_leaders();
 
@@ -193,46 +206,51 @@ CREATE FUNCTION set_primary_submission() RETURNS TRIGGER AS
 $BODY$
 DECLARE
 BEGIN
-    IF new.admin_id IS NULL THEN
-        IF (SELECT team_id FROM team_primary_submissions WHERE team_id = new.team_id) IS NULL THEN
-            INSERT INTO team_primary_submissions
-            VALUES (new.team_id, new.id);
-        END IF;
+    IF (SELECT id FROM team_submissions WHERE team_id = new.team_id AND is_primary = TRUE) IS NULL THEN
+        UPDATE team_submissions
+        SET is_primary= TRUE
+        WHERE id = new.id;
     END IF;
     RETURN NULL;
 END;
 $BODY$
     LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trig_submission_created ON submissions;
+DROP TRIGGER IF EXISTS trig_submission_created ON team_submissions;
 
 CREATE TRIGGER trig_submission_created
     AFTER INSERT
-    ON submissions
+    ON team_submissions
     FOR EACH ROW
 EXECUTE PROCEDURE set_primary_submission();
 
-DROP FUNCTION IF EXISTS deactivate_last_game;
-CREATE FUNCTION deactivate_last_game() RETURNS TRIGGER AS
+DROP FUNCTION IF EXISTS manage_team_submissions;
+CREATE FUNCTION manage_team_submissions() RETURNS TRIGGER AS
 $BODY$
 DECLARE
-    old_active_game games.id%TYPE;
+    old_primary_id team_submissions.id%TYPE;
 BEGIN
-    SELECT id FROM games WHERE is_active IS TRUE FETCH FIRST ROW ONLY INTO old_active_game;
-    IF old_active_game IS NOT NULL THEN
-        UPDATE games
-        SET is_active = FALSE
-        WHERE id = old_active_game;
+    SELECT id
+    FROM team_submissions
+    WHERE team_id = new.team_id
+      AND is_primary = TRUE FETCH FIRST ROW ONLY
+    INTO old_primary_id;
+
+    IF old_primary_id IS NOT NULL THEN
+        UPDATE team_submissions
+        SET is_primary = FALSE
+        WHERE id = old_primary_id;
     END IF;
     RETURN NULL;
 END;
 $BODY$
     LANGUAGE plpgsql;
 
-DROP TRIGGER IF EXISTS trig_submission_created ON submissions;
+DROP TRIGGER IF EXISTS trig_team_submission_changed ON team_submissions;
 
-CREATE TRIGGER game_activated
-    BEFORE UPDATE OF is_active
-    ON games
+CREATE TRIGGER trig_team_submission_changed
+    BEFORE UPDATE
+        OF is_primary
+    ON team_submissions
     FOR EACH ROW
-EXECUTE PROCEDURE deactivate_last_game();
+EXECUTE PROCEDURE manage_team_submissions();

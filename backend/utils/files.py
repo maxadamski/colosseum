@@ -1,13 +1,14 @@
 import os
 import shutil
 import zipfile
+import markdown
 
 from typing import IO
 from tempfile import NamedTemporaryFile
 from fastapi import HTTPException
 from pathlib import Path
 
-gui_ext = ['.html']
+widget_ext = ['.html']
 overview_ext = ['.md']
 rules_ext = ['.md']
 game_exec_ext = ['.zip', '.py', '.cpp']
@@ -63,6 +64,13 @@ def get_game_directories(game_id, init=False):
     return game_dir, game_files_dir
 
 
+def get_game_submission_directory(game_id, submission_id, init=False):
+    game_submission_dir = os.path.join(GAMES_DIR, str(game_id), 'submissions', str(submission_id))
+    if init:
+        Path(game_submission_dir).mkdir(parents=True, exist_ok=True)
+    return game_submission_dir
+
+
 def get_submission_directory(submission_id, init=False):
     submission_dir = os.path.join(SUBMISSIONS_DIR, str(submission_id))
     if init:
@@ -91,3 +99,10 @@ def save_executables(game_exec_dir, file, name, accept_ext):
             move_temp_file(temp_path, single_file_name)
     else:
         raise BAD_EXTENSION
+
+
+def get_html_from_markdown(markdown_path):
+    with open(markdown_path, "r") as input_file:
+        text = input_file.read()
+    html = markdown.markdown(text)
+    return html
