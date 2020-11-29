@@ -83,3 +83,4 @@ export default {
 table > tr > :nth-child(1)
     width 20ch
 </style>
+

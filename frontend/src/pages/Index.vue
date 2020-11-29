@@ -233,3 +233,4 @@ export default {
 .submission-table > tr > :nth-child(2)
     width 20ch
 </style>
+
