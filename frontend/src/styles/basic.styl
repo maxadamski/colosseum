@@ -1,5 +1,7 @@
 @import "shared"
 
+// --- BASICS ---
+
 html
     box-sizing border-box
     font-family 'Open Sans', 'Helvetica', sans-serif
@@ -35,6 +37,34 @@ body
     margin 0
     padding 0
 
+// --- TABLES ---
+
+table
+    white-space nowrap
+    border-collapse collapse
+    width 100%
+    border-top 1px solid decor-color
+    border-bottom 1px solid decor-color
+
+tr
+    height 40px
+    &:not(:last-of-type)
+        border-bottom 1px solid decor-color
+    &:nth-child(even)
+        background #f8f8f8
+
+th, td
+    padding u2 u3
+    text-align left
+    vertical-align center
+    font-size 15px
+
+td button
+    font-size 13px
+    padding u1 u2
+
+// --- CONTROLS ---
+
 button
     all unset
 
@@ -53,7 +83,6 @@ button, select, .input-file
 
     &:active
         background active-color
-
 
 input
     word-wrap break-word
@@ -109,28 +138,7 @@ label.input-file
         width 1px
         opacity 0
 
-
-table
-    border-collapse collapse
-    width 100%
-
-tr
-    height 40px
-    &:not(:last-of-type)
-        border-bottom 1px solid decor-color
-
-th, td
-    padding u2 u3
-    text-align left
-    vertical-align center
-    font-size 15px
-
-td button
-    font-size 13px
-    padding u1 u2
-
-tr:nth-child(even)
-    background #f8f8f8
+// --- DARK COLORS ---
 
 @media (prefers-color-scheme: dark)
     hr

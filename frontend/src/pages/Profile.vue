@@ -1,91 +1,76 @@
 <script>
 export default {
     name: 'Profile',
-    data: () => ({
-        nick: 'Max',
-        group: 'I9-2020',
-        type: 'teacher',
-        groups: [
-            {name: 'I1-2020', id: '1'},
-            {name: 'I2-2020', id: '2'},
-            {name: 'I3-2020', id: '3'},
-            {name: 'I4-2020', id: '4'}
-        ],
-        gamess: [
-            {name: 'Pentago', active:true, id: '1'},
-            {name: 'Chess', active:false, id: '2'},
-        ],
-    }),
+    data: () => ({}),
 }
 </script>
 
 <template lang="pug">
-div
-    h2 User Profile
+    div
+        h2 User Profile
 
-    h3 Basic Information
+        .debug
+            .hflex.hlist-3
+                label.input-radio
+                    input(type='radio' v-model='$s.userType' value='student')
+                    span Student
+                label.input-radio
+                    input(type='radio' v-model='$s.userType' value='teacher')
+                    span Teacher
 
-    h4 Nickname
-    .hcombo
-        input(type='text' :value='nick')
-        button Save
+            .div
+                button(@click='doLogin') Login
 
 
-    div(v-if='type == "student"')
-        h4 Group
-        .hcombo
-            .select
-                select
-                    option(v-for="group in groups" v-bind:key="groups.id") {{ group.name }}
-            button Save
+        div(v-if='$s.userType == "student"')
+            h3 Basic Information
 
-    div(v-if='type == "teacher"')
-        h2 Game-Maker Zone
+            h4 Nickname
+            .hcombo
+                input(type='text' :value='$s.studentNick')
+                button Save
 
-        h3 My Games
-        
-        .rounded.w-50
+            h4 Group
+            .hcombo
+                .select
+                    select(v-model='$s.studentGroup')
+                        option(v-for='group in $s.groups') {{ group.name }}
+                button Save
+
+        div(v-if='$s.userType == "teacher"')
+            h2 Game-Maker Zone
+
+            h3 My Games
+
             table
                 tr
                     th Game
                     th Actions
-                tr
-                    td Naive Player
-                    td.hcombo
-                        button Rename
-                        button Delete
-                tr
-                    td Smart Player
-                    td.hcombo
-                        button Rename
-                        button Delete
-                
-                tr(v-for="game in games" v-bind:key="game.id")
+
+                tr(v-for='game in $s.games' :key='game.id')
                     td {{ game.name }}
                     td.hcombo
                         button Edit
                         button Reset
-                        
-
+                        button Delete
+                        button(v-if='game.id != $s.game.id') Activate
                 tr
                     td New game
                     td.hcombo
                         router-link(to='/edit-game')
                             button Create
 
-        h3 My Groups
-        .rounded.w-50
+            h3 My Groups
             table
                 tr
                     th Name
                     th Actions
-                tr(v-for="group in groups" v-bind:key="group.id")
+                tr(v-for='group in $s.groups')
                     td {{ group.name }}
                     td.hcombo
                         button Export
                         button Rename
-                        button Delete                  
-              
+                        button Delete
                 tr
                     td New group
                     td.hcombo
@@ -94,4 +79,7 @@ div
 
 <style lang="stylus" scoped>
 @import "../styles/shared.styl"
+
+table > tr > :nth-child(1)
+    width 20ch
 </style>

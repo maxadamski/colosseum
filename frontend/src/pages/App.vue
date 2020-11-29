@@ -12,20 +12,20 @@ export default {
 </script>
 
 <template lang="pug">
-#inner-app
-    header
-        router-link.header-left(to='/')
+    #inner-app
+        header
+            router-link.header-left(to='/')
+                img(src='../static/logo.png')
+                span AI Colosseum
+            nav
+                router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
+        main
+            router-view
+
+        footer
             img(src='../static/logo.png')
-            span AI Colosseum
-        nav
-            router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
-    main
-        router-view
-    
-    footer
-        img(src='../static/logo.png') 
-        small &copy; Copyright 2020
-        img(src='../static/logo-put.png') 
+            small &copy; Copyright 2020
+            img(src='../static/logo-put.png')
 </template>
 
 <style lang="stylus">
@@ -48,12 +48,13 @@ export default {
     font-size 1.5em
     font-weight bold
     color text-color
-    
+
 nav
     hgap u5
 
     a
         color text-color
+
         &:hover
             text-decoration underline
 
@@ -64,7 +65,7 @@ footer
     hflex space-between center
     height 60px
     margin-top 20px
-    padding-top 20px 
+    padding-top 20px
     border-top solid grey
     border-width thin
 
