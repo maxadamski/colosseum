@@ -22,7 +22,7 @@ i32 score_board(char *board, i32 size, char player) {
                 if (in_a_row >= size/2 + 2)
                     result += 1000 * mul;
                 else
-                    result += in_a_row * mul;
+                    result += in_a_row * in_a_row * mul;
             } else {
                 in_a_row = 1;
                 color = f;
@@ -40,7 +40,7 @@ i32 score_board(char *board, i32 size, char player) {
                 if (in_a_row >= size/2 + 2)
                     result += 1000 * mul;
                 else
-                    result += in_a_row * mul;
+                    result += in_a_row * in_a_row * mul;
             } else {
                 in_a_row = 1;
                 color = f;
