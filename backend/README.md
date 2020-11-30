@@ -22,7 +22,7 @@ createdb -O colosseumdb_admin colosseumdb
 Connect to our database as a default postgres user:
 
 ```
-psql -d colosseum_db
+psql -d colosseumdb
 ```
 
 Create the schema using the 'make_schema.sql' file (it may be necessary to use the absolute path of the make_schema.sql file)

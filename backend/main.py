@@ -322,8 +322,9 @@ async def get_games(session=Depends(teacher_session)):
 async def get_active_game():
     game = db.get_active_game()
     if game:
-        game["overview"] = get_html_from_markdown(os.path.join(GAMES_DIR, '{}/overview.md'.format(game["id"])))
-        game["rules"] = get_html_from_markdown(os.path.join(GAMES_DIR, '{}/rules.md'.format(game["id"])))
+        id = game['id']
+        game["overview"] = get_html_from_markdown(os.path.join(GAMES_DIR, f'{id}/overview.md'))
+        game["rules"] = get_html_from_markdown(os.path.join(GAMES_DIR, f'{id}/rules.md'))
         return game
     else:
         raise NOT_FOUND
@@ -331,9 +332,9 @@ async def get_active_game():
 
 @app.get('/games/{id}/widget')
 async def get_active_game_widget(id: int):
-    with open(os.path.join(GAMES_DIR, '{}/widget.html'.format(id)), "r") as input_file:
+    with open(os.path.join(GAMES_DIR, f'{id}/widget.html'), "r") as input_file:
         text = input_file.read()
-    return {"html": text}
+    return HTMLResponse(content=text, status_code=200)
 
 
 @app.get('/games/{id}')
