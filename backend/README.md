@@ -2,7 +2,6 @@
 
 ### 1. Install dependencies:
 
-* Anaconda
 * PostgreSQL
 * Redis-server
 
@@ -47,12 +46,27 @@ GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO colosseumdb_admin;
 
 **You can use different names for the database and user with a different password, but then you need to change the config/dbconfig.toml file**
 
-### 3. Create conda environment with necessary requirements:
+### 3. Prepare the environment
+
+**Method 1 (recommended)**
+
+Install anaconda or miniconda and execute the following commands:
 
 ```
 conda env create -f environment.yml
 conda activate backend
 ```
+
+**Method 2**
+
+Manually install Python 3.8 and Pip
+
+Install the required Python packages from requirements:
+
+```
+pip install -r requirements.txt
+```
+
 
 ### 4. Start the API:
 

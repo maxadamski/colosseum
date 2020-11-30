@@ -1,15 +1,8 @@
 name: backend
 channels:
-    - anaconda
     - conda-forge
 dependencies:
+    - redis
     - python=3.8
-    - passlib
-    - fastapi
-    - uvicorn
-    - toml
-    - pip
     - pip:
-      - psycopg2-binary
-      - pugsql
-      - redis
+            - -r file:requirements.txt
