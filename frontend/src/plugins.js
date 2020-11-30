@@ -36,7 +36,7 @@ export const SimpleApi = {
                     'X-Session-Token': token,
                 },
             }
-            
+
             if (method !== 'GET') {
                 args['body'] = typeof data === 'object' && data !== null && !(data instanceof FormData) ? JSON.stringify(data) : data
             }

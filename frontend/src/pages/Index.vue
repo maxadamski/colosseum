@@ -1,5 +1,5 @@
 <script>
-import { now, datediff } from '../common'
+import {now, datediff} from '../common'
 
 export default {
     name: 'Index',

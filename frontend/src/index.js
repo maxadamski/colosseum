@@ -2,8 +2,8 @@ import 'regenerator-runtime/runtime'
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import App from './pages/App.vue'
-import { SimpleState, ReactiveStorage, SimpleApi } from './plugins.js'
-import { unwrap } from './common.js'
+import {SimpleState, ReactiveStorage, SimpleApi} from './plugins.js'
+import {unwrap} from './common.js'
 
 const develApiUrl = 'http://localhost:8000'
 const finalApiUrl = 'https://colosseum.put.poznan.pl/api'
@@ -19,13 +19,13 @@ Vue.use(SimpleState, {
 
     //Public data:
     groups: [
-        { "id": 1, "name": "Group1" },
-        { "id": 2, "name": "Group2" },
-        { "id": 3, "name": "Group3" },
+        {"id": 1, "name": "Group1"},
+        {"id": 2, "name": "Group2"},
+        {"id": 3, "name": "Group3"},
     ],
     envs: [
-        { "id": 1, "name": "Env1" },
-        { "id": 2, "name": "Env2" }
+        {"id": 1, "name": "Env1"},
+        {"id": 2, "name": "Env2"}
     ],
     game: {
         id: 1,
@@ -98,7 +98,7 @@ Vue.mixin({
         async safeApi(method, path, data) {
             const [resp, err1] = await this.$api(method, path, data)
             if (err1) return [null, -1] // network error (bad url, server down etc.)
-            const [json, err2] = await unwrap(resp.json()) 
+            const [json, err2] = await unwrap(resp.json())
             if (err2) return [null, resp.status] // response body is not JSON (plain text, HTML etc.)
             return [json, resp.status]
         },
