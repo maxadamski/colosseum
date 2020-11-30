@@ -2,8 +2,8 @@ import 'regenerator-runtime/runtime'
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import App from './pages/App.vue'
-import { SimpleState, ReactiveStorage, SimpleApi } from './plugins.js'
-import { unwrap } from './common.js'
+import {SimpleState, ReactiveStorage, SimpleApi} from './plugins.js'
+import {unwrap} from './common.js'
 
 const develApiUrl = 'http://localhost:8000'
 const finalApiUrl = 'https://colosseum.put.poznan.pl/api'
@@ -50,16 +50,16 @@ Vue.use(SimpleState, {
         rules: '<h2>Rules of the game</h2><p>A rendered markdown document</p>',
         widget: 'http://localhost:8000/game/4/interactive.html'
     },
-    refPlayers: ['Player1', 'Player2', 'Player3'],
+    refPlayers: [{id: 1, name: 'Player1'}, {id: 2, name: 'Player2'}, {id: 3, name: 'Player3'}],
 
     // Student data:
 
-    studentGroup: 'Group3',
+    studentGroup: 1,
     studentId: 1,
     studentNick: 'Student1Nickname',
 
     studentInvitations: [
-        {leader: "Student2Nickname", name: "Team1", team_id: '1'},
+        {leader: "Student2Nickname", name: "Team1", id: '1'},
     ],
 
     teamId: 1,
@@ -77,12 +77,10 @@ Vue.use(SimpleState, {
     ],
 
     teamSubmissions: [
-        {date: "2020-10-11 10:15", env: "Python 3", state: "Ok", score: "80%", id: 1},
-        {date: "2020-10-11 10:20", env: "C++", state: "buil failed", score: "n/a", id: 2},
-        {date: "2020-10-11 23:12", env: "C++", state: "Ok", score: "78%", id: 3},
+        {date: "2020-10-11 10:15", env: "Python 3", status: "Ok", score: "80%", id: 1, primary: false},
+        {date: "2020-10-11 10:20", env: "C++", status: "buil failed", score: "n/a", id: 2, primary: false},
+        {date: "2020-10-11 23:12", env: "C++", status: "Ok", score: "78%", id: 3, primary: true},
     ],
-
-    primarySub: 1,
 
     // Teacher data:
     games: [
@@ -114,12 +112,12 @@ Vue.mixin({
         async safeApi(method, path, data) {
             const [resp, err1] = await this.$api(method, path, data)
             if (err1) return [null, -1] // network error (bad url, server down etc.)
-            const [json, err2] = await unwrap(resp.json()) 
+            const [json, err2] = await unwrap(resp.json())
             if (err2) return [null, resp.status] // response body is not JSON (plain text, HTML etc.)
             return [json, resp.status]
         },
         async doLogin() {
-            const login = 'student1'
+            const login = 'student3'
             const password = 'pwd'
             const [data, status] = await this.safeApi('POST', '/login', {login: login, password: password})
             if (status != 200) {
@@ -143,12 +141,7 @@ Vue.mixin({
             if (gameStatus != 200) {
                 console.log(`No active game! (status code ${gameStatus})`)
             } else {
-                this.$s.game.id = gameData.id
-                this.$s.game.name = gameData.name
-                this.$s.game.description = gameData.description
-                this.$s.game.deadline = new Date(gameData.deadline)
-                this.$s.game.overview = gameData.overview
-                this.$s.game.rules = gameData.rules
+                this.$s.game = gameData
 
                 const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
                 this.$s.game.widget = gameWidget.html
@@ -162,7 +155,7 @@ Vue.mixin({
                 const [userData, userStatus] = await this.safeApi('GET', '/students/me')
                 this.$s.studentId = userData.id
                 this.$s.studentNick = userData.nickname
-                this.$s.studentGroup = userData.group_name
+                this.$s.studentGroup = userData.group_id
 
                 const [studentInvitations, studentInvitationsStatus] = await this.safeApi('GET', '/students/me/invitations')
                 this.$s.studentInvitations = studentInvitations
@@ -181,9 +174,6 @@ Vue.mixin({
                 const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${studentTeam.id}/submissions`)
                 this.$s.teamSubmissions = teamSubmissions
             } else {
-                const [groupsData, groupsStatus] = await this.safeApi('GET', `/groups`)
-                this.$s.groups = groupsData
-
                 const [gamesData, gamesStatus] = await this.safeApi('GET', `/games`)
                 this.$s.games = gamesData
             }

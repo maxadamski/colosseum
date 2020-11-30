@@ -36,9 +36,9 @@ export const SimpleApi = {
                     'X-Session-Token': token,
                 },
             }
-
+            
             if (method !== 'GET') {
-                args['body'] = typeof data === 'object' && data !== null ? JSON.stringify(data) : data
+                args['body'] = typeof data === 'object' && data !== null && !(data instanceof FormData) ? JSON.stringify(data) : data
             }
 
             return fetch(url, args).then(res => [res, null]).catch(err => [null, err])

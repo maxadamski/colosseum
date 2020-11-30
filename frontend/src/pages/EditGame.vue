@@ -2,7 +2,7 @@
 export default {
     name: 'EditGame',
     data: () => ({
-        ref_players: [
+        gameRefPlayers: [
             {name: 'Naive Player', id: '1'},
             {name: 'Smart Player', id: '2'},
         ],
@@ -76,7 +76,7 @@ div
         tr
             th Name
             th Actions
-        tr(v-for="player in refPlayers" :key="players.id")
+        tr(v-for="player in gameRefPlayers" :key="player.id")
             td {{ player.name }}
             td.hcombo
                 button Rename
