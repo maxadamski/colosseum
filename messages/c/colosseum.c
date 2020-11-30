@@ -64,7 +64,7 @@ void mscanf(u8 const *buf, char const *fmt, ...) {
 				}
 				sizes[field] *= dim;
 				if (dim > max) panic("array dimimension %d must be less than %d, as specified in the format, but got %d\n", fmt_dims, max, dim);
-				if (dim == 0 || max == 0) panic("array dimensions must be greater than 0, but got %d\n", dim);
+				//if (dim == 0 || max == 0) panic("array dimensions must be greater than 0, but got %d\n", dim);
 				if (*fmt == ']') break;
 				if (*fmt != ',') panic("expected `,` but got `%c`\n", *fmt);
                 fmt++;
@@ -72,7 +72,7 @@ void mscanf(u8 const *buf, char const *fmt, ...) {
 			fmt++;
 			if (fmt_dims != msg_dims) panic("array dimensions don't match (%d != %d)\n", fmt_dims, msg_dims);
 			if (fmt_dims == 0) panic("array must have at least one dimension\n");
-			if (fmt_dims > max_dim) panic("array must have at most eight dimensions\n");
+			if (fmt_dims > max_dim) panic("array must have at most %u dimensions, but got %u\n", max_dim, fmt_dims);
 		}
 		data += sizes[field];
 		field++;
@@ -112,14 +112,14 @@ i32 msendf(int f, i8 tag, char const *fmt, ...) {
 					dim = parse_num(&fmt);
 				}
 				dims[n_dims++] = dim;
-				if (dim == 0) panic("array dimensions must be greater than 0\n");
+				//if (dim == 0) panic("array dimensions must be greater than 0\n");
 				if (*fmt == ']') break;
 				if (*fmt != ',') panic("expected `,` or `]` but got `%c`\n", *fmt);
 				fmt++;
 			}
 			fmt++;
 			if (n_dims == 0) panic("array must have at least one dimension\n");
-			if (n_dims > max_dim) panic("array must have at most eight dimensions\n");
+			if (n_dims > max_dim) panic("array must have at most %u dimensions, but got %u\n", max_dim, n_dims);
 			types[type++] = (0x07 & n_dims) << 4 | (base & 0x0F);
 			for (int i = 0; i < n_dims; i++) {
 				u32 dim = dims[i];
