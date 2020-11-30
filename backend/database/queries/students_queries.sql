@@ -1,7 +1,7 @@
 -- :name get_student :one
-SELECT s.id, s.nickname, g.name as group_name
-FROM students s JOIN groups g ON g.id = s.group_id
-WHERE s.id = :student_id;
+SELECT id, nickname, group_id
+FROM students s
+WHERE id = :student_id;
 
 -- :name get_student_by_login :one
 SELECT *
@@ -20,11 +20,9 @@ RETURNING id;
 
 -- :name update_student
 UPDATE students
-SET login     = coalesce(:new_login, login),
-    nickname = coalesce(:new_nickname, nickname),
-    password = coalesce(:new_password, password),
+SET nickname = coalesce(:new_nickname, nickname),
     group_id = coalesce(:new_group_id, group_id)
-WHERE id = :user_id;
+WHERE id = :student_id;
 
 -- :name remove_student
 DELETE

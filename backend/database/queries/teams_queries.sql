@@ -43,7 +43,7 @@ FROM team_invitations ti
 WHERE ti.team_id = :team_id;
 
 -- :name get_student_invitations :many
-SELECT t.id as team_id, t.name, s.nickname AS leader
+SELECT t.id, t.name, s.nickname AS leader
 FROM team_invitations ti
          INNER JOIN teams t ON ti.team_id = t.id
          INNER JOIN students s ON s.id = t.leader_id

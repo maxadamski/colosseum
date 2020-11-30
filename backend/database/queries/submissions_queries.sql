@@ -10,11 +10,11 @@ WHERE id = :submission_id;
 
 -- :name get_team_submissions :many
 SELECT s.id,
-       s.submission_time,
+       to_char(s.submission_time, 'DD/MM/YYYY HH24:MI:SS') as date,
+       e.name AS env,
        s.status,
-       e.name AS environment_name,
-       s.status,
-       s.is_primary
+       s.is_primary as "primary",
+       0 as score
 FROM team_submissions s
          JOIN environments e ON s.environment_id = e.id
 WHERE s.team_id = :team_id;
@@ -61,6 +61,11 @@ WHERE id = :submission_id;
 -- :name update_team_submission_path
 UPDATE team_submissions
 SET files_path = :files_path
+WHERE id = :submission_id;
+
+-- :name remove_team_submission
+DELETE
+FROM team_submissions
 WHERE id = :submission_id;
 
 -- :name remove_ref_submission

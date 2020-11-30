@@ -1,6 +1,6 @@
 import pydantic
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional
 
 
@@ -33,16 +33,14 @@ class StudentPost(BaseModel):
     login: str
     password: str
     nickname: str
-    class_id: int
+    group_id: int
 
     check_strings: classmethod = string_strip_validator('*')
 
 
 class StudentPatch(BaseModel):
-    login: Optional[str] = None
-    password: Optional[str] = None
-    nickname: Optional[str] = None
-    class_id: Optional[int] = None
+    nickname: Optional[str] = Field(None, max_length=50)
+    group_id: Optional[int] = None
 
     check_strings: classmethod = string_strip_validator('*')
 

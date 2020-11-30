@@ -32,7 +32,7 @@ CREATE TABLE students
     login    VARCHAR(50) NOT NULL UNIQUE,
     password CHAR(226)   NOT NULL,
     nickname VARCHAR(50) NOT NULL UNIQUE,
-    group_id INTEGER     NOT NULL REFERENCES groups (id) ON DELETE CASCADE
+    group_id INTEGER     NOT NULL REFERENCES groups (id) ON DELETE SET NULL
 );
 
 CREATE TABLE teams
@@ -95,7 +95,7 @@ CREATE TABLE ref_submissions
     files_path      VARCHAR(1024) UNIQUE,
     status          VARCHAR(20),
     environment_id  INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE,
-    teacher_id      INTEGER REFERENCES teachers (id) ON DELETE CASCADE,
+    teacher_id      INTEGER REFERENCES teachers (id) ON DELETE SET NULL,
     game_id         INTEGER REFERENCES games (id) ON DELETE CASCADE
 );
 
@@ -223,34 +223,3 @@ CREATE TRIGGER trig_submission_created
     ON team_submissions
     FOR EACH ROW
 EXECUTE PROCEDURE set_primary_submission();
-
-DROP FUNCTION IF EXISTS manage_team_submissions;
-CREATE FUNCTION manage_team_submissions() RETURNS TRIGGER AS
-$BODY$
-DECLARE
-    old_primary_id team_submissions.id%TYPE;
-BEGIN
-    SELECT id
-    FROM team_submissions
-    WHERE team_id = new.team_id
-      AND is_primary = TRUE FETCH FIRST ROW ONLY
-    INTO old_primary_id;
-
-    IF old_primary_id IS NOT NULL THEN
-        UPDATE team_submissions
-        SET is_primary = FALSE
-        WHERE id = old_primary_id;
-    END IF;
-    RETURN NULL;
-END;
-$BODY$
-    LANGUAGE plpgsql;
-
-DROP TRIGGER IF EXISTS trig_team_submission_changed ON team_submissions;
-
-CREATE TRIGGER trig_team_submission_changed
-    BEFORE UPDATE
-        OF is_primary
-    ON team_submissions
-    FOR EACH ROW
-EXECUTE PROCEDURE manage_team_submissions();

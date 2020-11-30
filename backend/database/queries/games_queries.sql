@@ -8,7 +8,7 @@ FROM games
 WHERE id = :game_id;
 
 -- :name get_active_game :one
-SELECT id, name, description, DATE(deadline) as deadline
+SELECT id, name, description, to_char(deadline, 'YYYY-MM-DD') as deadline
 FROM games
 WHERE is_active = TRUE;
 

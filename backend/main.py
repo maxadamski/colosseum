@@ -113,13 +113,9 @@ async def read_student(session=Depends(student_session)):
 
 @app.patch('/students/me')
 async def update_student(data: StudentPatch, session=Depends(student_session)):
-    new_login, new_password, new_nickname, new_group_id = data.login, data.password, data.nickname, data.group_id
+    new_nickname, new_group_id = data.nickname, data.group_id
     student_id = session['user_id']
-    hashed = hashed_password(new_password) if new_password is not None else None
-    db.update_student(student_id=student_id, new_login=new_login, new_nickname=new_nickname, new_password=hashed,
-                      new_group_id=new_group_id)
-    if login is not None or new_password is not None:
-        delete_session(student_sessions, session['login'])
+    db.update_student(student_id=student_id, new_nickname=new_nickname, new_group_id=new_group_id)
 
 
 @app.delete('/students/me')
@@ -153,7 +149,7 @@ async def decline_team_invite(team_id: int, session=Depends(student_session)):
 
 
 #
-# Student team endpoints
+# Team endpoints
 #
 
 
@@ -174,12 +170,16 @@ async def get_student_team_invitations(id: int):
 
 
 @app.patch('/teams/{id}')
-async def update_team(id: int, new_name: str = Body(..., embed=True), session=Depends(student_session)):
+async def update_team(id: int, new_name: str = Body(..., max_length=50, embed=True), session=Depends(student_session)):
     student_id = session['user_id']
     student_team = db.get_team(team_id=id)
     if student_id != student_team['leader_id']:
         raise FORBIDDEN
-    db.update_team_name(team_id=id, new_name=new_name)
+    new_name = new_name.strip()
+    if new_name != "":
+        return db.update_team_name(team_id=id, new_name=new_name)
+    else:
+        raise HTTPException(422, 'Cannot pass empty name!')
 
 
 @app.patch('/teams/{team_id}/leader/{leader_id}')
@@ -192,7 +192,7 @@ async def update_team_leader(team_id: int, leader_id: int, session=Depends(stude
 
 
 @app.post('/teams/{team_id}/invitations/{nickname}')
-async def invite_to_student_team(team_id: int, nickname: str, session=Depends(student_session)):
+async def invite_to_team(team_id: int, nickname: str, session=Depends(student_session)):
     student_id = session['user_id']
     student_team = db.get_team(team_id=team_id)
     if student_id != student_team['leader_id']:
@@ -204,7 +204,7 @@ async def invite_to_student_team(team_id: int, nickname: str, session=Depends(st
 
 
 @app.delete('/students/{team_id}/invitations/{student_id}')
-async def cancel_student_team_invite(team_id: int, student_id: int, session=Depends(student_session)):
+async def cancel_team_invite(team_id: int, student_id: int, session=Depends(student_session)):
     leader_id = session['user_id']
     student_team = db.get_team(team_id=team_id)
     if leader_id != student_team['leader_id']:
@@ -221,7 +221,7 @@ async def get_team_submissions(id: int, session=Depends(student_session)):
     return db.get_team_submissions(team_id=id)
 
 
-@app.post('/students/me/team/submission')
+@app.post('/teams/me/submissions')
 async def create_student_team_submission(is_automake: bool = Body(...),
                                          environment_id: int = Body(...),
                                          executables: UploadFile = File(...), session=Depends(student_session)):
@@ -233,19 +233,23 @@ async def create_student_team_submission(is_automake: bool = Body(...),
 
     submission_dir = get_submission_directory(submission_id, init=True)
 
-    save_executables(submission_dir, executables, 'player', submission_exec_ext)
-    db.update_team_submission_path(submission_id=submission_id, files_path=submission_dir)
-    return submission_id
+    try:
+        save_executables(submission_dir, executables, 'player', submission_exec_ext)
+        db.update_team_submission_path(submission_id=submission_id, files_path=submission_dir)
+        return submission_id
+    except Exception as e:
+        remove_dir(submission_dir)
+        db.remove_team_submission(submission_id=submission_id)
+        raise e
 
 
-@app.post('/students/me/team/submissions/primary/{id}')
+@app.post('/teams/me/submissions/primary/{id}')
 async def choose_student_team_primary_submission(id: int, session=Depends(student_session)):
     student_id = session['user_id']
     student_team = db.get_student_team(student_id=student_id)
-    submission = db.get_submission(submission_id=id)
+    submission = db.get_team_submission(submission_id=id)
     if submission['team_id'] != student_team['id'] or student_team['leader_id'] != student_id:
         raise FORBIDDEN
-
     db.set_primary_submission(team_id=student_team['id'], submission_id=id)
     return id
 
@@ -398,17 +402,10 @@ async def update_game(id: int, name: str = None, description: str = None, is_aut
 async def remove_game(id: int, session=Depends(teacher_session)):
     game = db.get_game(game_id=id)
     if game["is_active"]:
-        db.remove_all_groups()
-        db.remove_all_students()
-        db.remove_all_teams()
-        db.remove_all_team_submissions()
-        db.remove_all_tournament_results()
-        db.remove_all_ref_results()
-        clear_dir_contents(SUBMISSIONS_DIR)
+        raise FORBIDDEN
     game_dir, _ = get_game_directories(id)
     remove_dir(game_dir)
     db.remove_game(game_id=id)
-    db.remove_game_ref_submissions(game_id=id)
 
 
 @app.post('/games/activate/{id}')
@@ -421,7 +418,7 @@ async def activate_game(id: int, session=Depends(teacher_session)):
     db.remove_all_ref_results()
     clear_dir_contents(SUBMISSIONS_DIR)
     db.deactivate_games()
-    db.activate_game(game_id=id)
+    return db.activate_game(game_id=id)
 
 
 @app.get('/games/{game_id}/ref_submissions')
