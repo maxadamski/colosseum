@@ -19,30 +19,30 @@ div
                 input(type='radio' v-model='$s.userType' value='teacher')
                 span Teacher
 
-        .div(v-if='!isAuthorized')
-            span Not Authorized
+        .div
             button(@click='doLogin') Login
 
-    h3 Basic Information
-
-    h4 Nickname
-    .hcombo
-        input(type='text' :value='$s.userNick')
-        button Save
 
     div(v-if='$s.userType == "student"')
+        h3 Basic Information
+
+        h4 Nickname
+        .hcombo
+            input(type='text' :value='$s.studentNick')
+            button Save
+
         h4 Group
         .hcombo
             .select
-                select(v-model='$s.userGroup')
-                    option(v-for='group in $s.groups') {{ group }}
+                select(v-model='$s.studentGroup')
+                    option(v-for='group in $s.groups') {{ group.name }}
             button Save
 
     div(v-if='$s.userType == "teacher"')
         h2 Game-Maker Zone
 
         h3 My Games
-        
+
         table
             tr
                 th Game
@@ -53,6 +53,8 @@ div
                 td.hcombo
                     button Edit
                     button Reset
+                    button Delete
+                    button(v-if='game.id != $s.game.id') Activate
             tr
                 td New game
                 td.hcombo
@@ -65,11 +67,11 @@ div
                 th Name
                 th Actions
             tr(v-for='group in $s.groups')
-                td {{ group }}
+                td {{ group.name }}
                 td.hcombo
                     button Export
                     button Rename
-                    button Delete                  
+                    button Delete
             tr
                 td New group
                 td.hcombo
@@ -82,3 +84,4 @@ div
 table > tr > :nth-child(1)
     width 20ch
 </style>
+

@@ -5,34 +5,17 @@ export default {
     name: 'Index',
     data: () => ({
         tab: 'overview',
-        tabs: ['overview', 'rules', 'play', 'team', 'submit'],
-        players: ['Naive Player', 'Smart Player', 'Tricky Player'],
+        student_tabs: ['overview', 'rules', 'play', 'team', 'submit'],
+        teacher_tabs: ['overview', 'rules', 'play'],
         player: 'Naive Player',
         submitEnv: 'C++',
         execution: 'auto',
-        teamName: 'Foobar',
         firstPlayer: 'you',
-        teamMembers: [
-            {name: 'Max', leader: true, awaiting: false, id: '1'},
-            {name: 'Piotr', leader: false, awaiting: false, id: '2'},
-            {name: 'Maciej', leader: false, awaiting: false, id: '3'},
-            {name: 'Sławek', leader: false, awaiting: true, id: '4'},
-        ],
-        invitations: [
-            {inviting:"Igor", team:"FizzBuzz", id: '1'},
-        ],
-        submissions: [
-            {date:"2020-10-11 10:15", env:"Python 3", state: "Ok", score: "80%", id:1},
-            {date:"2020-10-11 10:20", env:"C++", state: "buil failed", score: "n/a", id:2},
-            {date:"2020-10-11 23:12", env:"C++", state: "Ok", score: "78%", id:3},
-        ],
-        primarySub: 1,
-        game: 'Pentago',
-        timeLeft: '2 months'
+        invitedMember: '',
     }),
     computed: {
         deadlineCountdown() {
-            const dt = datediff(now(), this.$s.game.deadline) 
+            const dt = datediff(now(), this.$s.game.deadline)
             let res = ''
             const plural = (x) => x == 1 ? '' : 's'
             if (dt.months > 0) res += `${dt.months} month${plural(dt.months)}`
@@ -40,6 +23,28 @@ export default {
             if (!res) res += `${dt.hours} hour${plural(dt.hours)} and ${dt.minutes} minute${plural(dt.minutes)}`
             return res
         },
+    },
+    methods: {
+        async fetchTeam() {
+            const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
+            this.$s.teamId = studentTeam.id
+            this.$s.teamName = studentTeam.name
+            this.$s.teamLeaderId = studentTeam.leader_id
+
+            const [studentTeamMembers, teamMembersStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/members`)
+            this.$s.teamMembers = studentTeamMembers
+
+            const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
+            this.$s.teamInvitations = studentTeamInvitations
+
+            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
+            this.$s.teamSubmissions = teamSubmissions
+        },
+        async fetchInvited() {
+            const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
+            this.$s.teamInvitations = studentTeamInvitations
+            console.log(this.$s.teamInvitations)
+        }
     }
 }
 </script>
@@ -50,9 +55,10 @@ div
     h4 {{ $s.game.description }}
     b {{ deadlineCountdown }} left
 
-
-    nav.tabs
-        button(v-for='x in tabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
+    nav.tabs(v-if='$s.userType == "teacher"')
+        button(v-for='x in teacher_tabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
+    nav.tabs(v-else)
+        button(v-for='x in student_tabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
 
     div(v-if='tab == "overview"')
         div(v-html='$s.game.overview')
@@ -68,7 +74,7 @@ div
                 h4 Player
                 .select
                     select(v-model='player')
-                        option(v-for='x in players') {{x}}
+                        option(v-for='x in $s.refPlayers') {{x.name}}
             .vflex
                 h4 First player
                 .hflex.hlist-3
@@ -79,8 +85,7 @@ div
                         input(type='radio' v-model='firstPlayer' value='them')
                         span Them
 
-        .widget
-            div(v-html='$s.game.widget')
+        iframe.widget(:src='$s.game.widget')
 
 
     div(v-if='tab == "team"')
@@ -88,43 +93,47 @@ div
 
         h4 Team Name
         .hcombo
-            input(type='text' :value='teamName')
-            button Save
+            input(type='text' v-model='$s.teamName')
+            button(@click="safeApi('PATCH', `/teams/${$s.teamId}`, JSON.stringify({new_name: $s.teamName}))") Save
 
         h4 Team Members
         table
             tr
                 th User
                 th Status
-                th Actions
+                th(v-if="$s.studentId === $s.teamLeaderId") Actions
 
-            tr(v-for="member in teamMembers" :key="member.id")
-                td {{ member.name}}
+            tr(v-for="member in $s.teamMembers" :key="member.id")
+                td {{ member.nickname}}
 
-                td(v-if="member.leader") Leader 
-                td(v-else-if="member.awaiting") Invited
+                td(v-if="member.id === $s.teamLeaderId") Leader
                 td(v-else) Member
 
-                td(v-if="!member.leader && !member.awaiting") 
-                    button Set Leader
-                td(v-else-if="member.awaiting")
-                    button Cancel Invite
-                td(v-else)
+                td(v-if="$s.studentId === $s.teamLeaderId && member.id !== $s.studentId ")
+                    button(@click="safeApi('PATCH', `/teams/${$s.teamId}/leader/${member.id}`);$s.teamLeaderId = member.id") Set Leader
+            tr(v-for="(invited, index) in $s.teamInvitations" :key="invited.id")
+                td {{ invited.nickname}}
+
+                td Invited
+
+                td(v-if="$s.studentId === $s.teamLeaderId")
+                    button(@click="safeApi('DELETE', `/students/${$s.teamId}/invitations/${invited.id}`); $delete($s.teamInvitations, index)") Cancel Invite
 
         h3 Invitations
-        .hflex.hlist-3.fy-center
-            span(v-for="invitation in invitations" :key="invitation.id") 
-                b {{ invitation.inviting }} 
-                span invited you to team 
-                b {{ invitation.team }}
-            .hcombo
-                button Accept
-                button Delete
+        .hflex.hlist-3.fy-center(v-if="($s.studentInvitations).length")
+            span(v-for="(invitation, index) in $s.studentInvitations" :key="invitation.id")
+                b {{ invitation.leader }}
+                span  invited you to team 
+                b {{ invitation.name }}
+                .hcombo
+                    button(@click="safeApi('POST', `/students/me/invitations/${invitation.team_id}/accept`); $delete($s.studentInvitations, index); fetchTeam()") Accept
+                    button(@click="safeApi('POST', `/students/me/invitations/${invitation.team_id}/decline`); $delete($s.studentInvitations, index)") Delete
+        p(v-else) There are no invitations 
 
-        h4 Invite Member
-        .hcombo
-            input(type='text' placeholder='User nickname')
-            button Send
+        h4(v-if="$s.studentId === $s.teamLeaderId") Invite Member
+            .hcombo
+                input(type='text' placeholder='Student nickname', v-model="invitedMember")
+                button(@click="safeApi('POST', `/teams/${$s.teamId}/invitations/${invitedMember}`); fetchInvited()") Send
 
     div(v-if='tab == "submit"')
         h3 New Submission
@@ -140,7 +149,7 @@ div
                 h4 Environment
                 .select
                     select(v-model='submitEnv')
-                        option(v-for='env in $s.envs') {{env}}
+                        option(v-for='env in $s.envs') {{env.name}}
 
             .vflex
                 h4 Execution
@@ -169,9 +178,9 @@ div
                 th Score
                 th Actions
 
-            tr(v-for='sub in submissions' :key='sub.id')
+            tr(v-for='sub in $s.submissions' :key='sub.id')
                 td
-                    span(v-if='sub.id == primarySub')
+                    span(v-if='sub.id == $s.primarySub')
                         b.tooltip(title="This is your team's primary submission. Your final grade will depend on the performance of this submission") {{sub.id}}*
                     span(v-else) {{ sub.id }}
                 td {{ sub.date }}
@@ -179,7 +188,7 @@ div
                 td {{ sub.state }}
                 td {{ sub.score }}
                 td
-                    button(v-if='sub.id != primarySub' @click='primarySub = sub.id') Set Primary
+                    button(v-if='sub.id != $s.primarySub' @click='$s.primarySub = sub.id') Set Primary
 </template>
 
 <style lang="stylus" scoped>
@@ -222,3 +231,4 @@ div
 .submission-table > tr > :nth-child(2)
     width 20ch
 </style>
+

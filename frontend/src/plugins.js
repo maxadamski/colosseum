@@ -14,7 +14,7 @@ export const ReactiveStorage = {
             watch[key] = (x) => x !== null ? options.storage.setItem(key, x) : options.storage.removeItem(key)
         }
 
-        Vue.prototype.$local = new Vue({ data: data, watch: watch })
+        Vue.prototype.$local = new Vue({data: data, watch: watch})
     },
 }
 
@@ -45,3 +45,4 @@ export const SimpleApi = {
         }
     }
 }
+

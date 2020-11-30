@@ -2,11 +2,10 @@
 export default {
     name: 'EditGame',
     data: () => ({
-       players: [
+        ref_players: [
             {name: 'Naive Player', id: '1'},
             {name: 'Smart Player', id: '2'},
         ],
-
     }),
 }
 
@@ -58,7 +57,7 @@ div
             h4 Environment
             .select
                 select
-                    option(v-for="env in $s.envs") {{ env }}
+                    option(v-for="env in $s.envs") {{ env.name }}
                 label
 
         .vflex
@@ -77,7 +76,7 @@ div
         tr
             th Name
             th Actions
-        tr(v-for="player in players" v-bind:key="players.id")
+        tr(v-for="player in refPlayers" :key="players.id")
             td {{ player.name }}
             td.hcombo
                 button Rename
@@ -94,3 +93,4 @@ div
 .left
     display block
 </style>
+
