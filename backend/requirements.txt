@@ -1,0 +1,9 @@
+passlib
+fastapi
+uvicorn
+toml
+psycopg2-binary
+pugsql
+redis
+markdown
+python-multipart
