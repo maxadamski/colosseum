@@ -89,8 +89,5 @@ div
 
 <style lang="stylus" scoped>
 @import "../styles/shared.styl"
-
-.left
-    display block
 </style>
 

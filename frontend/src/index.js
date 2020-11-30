@@ -2,11 +2,12 @@ import 'regenerator-runtime/runtime'
 import Vue from 'vue'
 import VueRouter from 'vue-router'
 import App from './pages/App.vue'
-import {SimpleState, ReactiveStorage, SimpleApi} from './plugins.js'
-import {unwrap} from './common.js'
+import { SimpleState, ReactiveStorage, SimpleApi } from './plugins.js'
+import { unwrap } from './common.js'
 
 const develApiUrl = 'http://localhost:8000'
 const finalApiUrl = 'https://colosseum.put.poznan.pl/api'
+const apiUrl = process.env.NODE_ENV === 'development' ? develApiUrl : finalApiUrl
 
 Vue.prototype.$log = console.log
 
@@ -18,28 +19,13 @@ Vue.use(SimpleState, {
 
     //Public data:
     groups: [
-        {
-            "id": 1,
-            "name": "Group1"
-        },
-        {
-            "id": 2,
-            "name": "Group2"
-        },
-        {
-            "id": 3,
-            "name": "Group3"
-        },
+        { "id": 1, "name": "Group1" },
+        { "id": 2, "name": "Group2" },
+        { "id": 3, "name": "Group3" },
     ],
     envs: [
-        {
-            "id": 1,
-            "name": "Env1"
-        },
-        {
-            "id": 2,
-            "name": "Env2"
-        }
+        { "id": 1, "name": "Env1" },
+        { "id": 2, "name": "Env2" }
     ],
     game: {
         id: 1,
@@ -78,7 +64,7 @@ Vue.use(SimpleState, {
 
     teamSubmissions: [
         {date: "2020-10-11 10:15", env: "Python 3", status: "Ok", score: "80%", id: 1, primary: false},
-        {date: "2020-10-11 10:20", env: "C++", status: "buil failed", score: "n/a", id: 2, primary: false},
+        {date: "2020-10-11 10:20", env: "C++", status: "build failed", score: "n/a", id: 2, primary: false},
         {date: "2020-10-11 23:12", env: "C++", status: "Ok", score: "78%", id: 3, primary: true},
     ],
 
@@ -95,7 +81,7 @@ Vue.use(ReactiveStorage, {
 })
 
 Vue.use(SimpleApi, {
-    base: process.env.NODE_ENV === 'development' ? develApiUrl : finalApiUrl,
+    base: apiUrl,
     getLogin: () => Vue.prototype.$local.sessionLogin,
     getToken: () => Vue.prototype.$local.sessionKey,
 })
@@ -112,12 +98,12 @@ Vue.mixin({
         async safeApi(method, path, data) {
             const [resp, err1] = await this.$api(method, path, data)
             if (err1) return [null, -1] // network error (bad url, server down etc.)
-            const [json, err2] = await unwrap(resp.json())
+            const [json, err2] = await unwrap(resp.json()) 
             if (err2) return [null, resp.status] // response body is not JSON (plain text, HTML etc.)
             return [json, resp.status]
         },
         async doLogin() {
-            const login = 'student3'
+            const login = 'student1'
             const password = 'pwd'
             const [data, status] = await this.safeApi('POST', '/login', {login: login, password: password})
             if (status != 200) {
@@ -144,7 +130,7 @@ Vue.mixin({
                 this.$s.game = gameData
 
                 const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
-                this.$s.game.widget = gameWidget.html
+                this.$s.game.widget = `${apiUrl}/games/${gameData.id}/widget`
 
                 const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
                 this.$s.refPlayers = refPlayers
