@@ -4,7 +4,7 @@ import { now, datediff } from '../common'
 export default {
     name: 'Index',
     data: () => ({
-        tab: 'overview',
+        tab: 'play',
         student_tabs: ['overview', 'rules', 'play', 'team', 'submit'],
         teacher_tabs: ['overview', 'rules', 'play'],
         player: 'Naive Player',
@@ -67,24 +67,6 @@ div
         div(v-html='$s.game.rules')
 
     div(v-if='tab == "play"')
-        h3 Interactive Game
-
-        .hflex.hlist-6
-            .vflex
-                h4 Player
-                .select
-                    select(v-model='player')
-                        option(v-for='x in $s.refPlayers') {{x.name}}
-            .vflex
-                h4 First player
-                .hflex.hlist-3
-                    label.input-radio
-                        input(type='radio' v-model='firstPlayer' value='you')
-                        span You
-                    label.input-radio
-                        input(type='radio' v-model='firstPlayer' value='them')
-                        span Them
-
         iframe.widget(:src='$s.game.widget')
 
 
@@ -222,11 +204,12 @@ div
         background #ddd
 
 .widget
-    background gray
-    width 100%
-    height 500px
-    margin-top u4
     hflex center center
+    width 100%
+    min-height 500px
+    margin-top u4
+    border 1px solid red
+
 
 .submission-table > tr > :nth-child(2)
     width 20ch

@@ -7,6 +7,7 @@ import { unwrap } from './common.js'
 
 const develApiUrl = 'http://localhost:8000'
 const finalApiUrl = 'https://colosseum.put.poznan.pl/api'
+const apiUrl = process.env.NODE_ENV === 'development' ? develApiUrl : finalApiUrl
 
 Vue.prototype.$log = console.log
 
@@ -18,28 +19,13 @@ Vue.use(SimpleState, {
 
     //Public data:
     groups: [
-        {
-            "id": 1,
-            "name": "Group1"
-        },
-        {
-            "id": 2,
-            "name": "Group2"
-        },
-        {
-            "id": 3,
-            "name": "Group3"
-        },
+        { "id": 1, "name": "Group1" },
+        { "id": 2, "name": "Group2" },
+        { "id": 3, "name": "Group3" },
     ],
     envs: [
-        {
-            "id": 1,
-            "name": "Env1"
-        },
-        {
-            "id": 2,
-            "name": "Env2"
-        }
+        { "id": 1, "name": "Env1" },
+        { "id": 2, "name": "Env2" }
     ],
     game: {
         id: 1,
@@ -78,7 +64,7 @@ Vue.use(SimpleState, {
 
     teamSubmissions: [
         {date: "2020-10-11 10:15", env: "Python 3", state: "Ok", score: "80%", id: 1},
-        {date: "2020-10-11 10:20", env: "C++", state: "buil failed", score: "n/a", id: 2},
+        {date: "2020-10-11 10:20", env: "C++", state: "build failed", score: "n/a", id: 2},
         {date: "2020-10-11 23:12", env: "C++", state: "Ok", score: "78%", id: 3},
     ],
 
@@ -97,7 +83,7 @@ Vue.use(ReactiveStorage, {
 })
 
 Vue.use(SimpleApi, {
-    base: process.env.NODE_ENV === 'development' ? develApiUrl : finalApiUrl,
+    base: apiUrl,
     getLogin: () => Vue.prototype.$local.sessionLogin,
     getToken: () => Vue.prototype.$local.sessionKey,
 })
@@ -151,7 +137,7 @@ Vue.mixin({
                 this.$s.game.rules = gameData.rules
 
                 const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
-                this.$s.game.widget = gameWidget.html
+                this.$s.game.widget = `${apiUrl}/games/${gameData.id}/widget`
 
                 const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
                 this.$s.refPlayers = refPlayers
