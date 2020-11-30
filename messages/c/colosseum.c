@@ -67,6 +67,7 @@ void mscanf(u8 const *buf, char const *fmt, ...) {
 				if (dim == 0 || max == 0) panic("array dimensions must be greater than 0, but got %d\n", dim);
 				if (*fmt == ']') break;
 				if (*fmt != ',') panic("expected `,` but got `%c`\n", *fmt);
+                fmt++;
 			}
 			fmt++;
 			if (fmt_dims != msg_dims) panic("array dimensions don't match (%d != %d)\n", fmt_dims, msg_dims);
