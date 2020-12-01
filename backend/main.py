@@ -77,21 +77,21 @@ async def shutdown():
 async def login(user: UserLogin):
     login, password = user.login, user.password
     student = db.get_student_by_login(login=login)
-    if student and verify_password(password, student['password']):
+    if student is not None and verify_password(password, student['password']):
         key = make_session_token()
         exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
         create_session(student_sessions, login=student['login'], key=hashed_token(key), exp=exp, user_id=student['id'])
         return dict(key=key, exp=exp, is_teacher=False)
-    else:
-        teacher = db.get_teacher_by_login(login=login)
-        if teacher and verify_password(password, teacher['password']):
-            key = make_session_token()
-            exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
-            create_session(teacher_sessions, login=teacher['login'], key=hashed_token(key), exp=exp,
-                           user_id=teacher['id'])
-            return dict(key=key, exp=exp, is_teacher=True)
-        else:
-            raise BAD_LOGIN
+
+    teacher = db.get_teacher_by_login(login=login)
+    if teacher is not None and verify_password(password, teacher['password']):
+        key = make_session_token()
+        exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
+        create_session(teacher_sessions, login=teacher['login'], key=hashed_token(key), exp=exp,
+                       user_id=teacher['id'])
+        return dict(key=key, exp=exp, is_teacher=True)
+
+    raise BAD_LOGIN
 
 
 #

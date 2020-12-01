@@ -6,7 +6,7 @@ from utils.time import *
 LOGIN_TIMEOUT = 24  # in hours
 
 BAD_REQUEST = HTTPException(400, 'Malformed request')
-BAD_LOGIN = HTTPException(400, 'Incorrect username or password')
+BAD_LOGIN = HTTPException(403, 'Incorrect username or password')
 BAD_TOKEN = HTTPException(401, 'Invalid credentials', {'WWW-Authenticate': 'Bearer'})
 FORBIDDEN = HTTPException(403, 'Forbidden')
 SESSION_EXPIRED = HTTPException(403, 'Session expired')
@@ -14,18 +14,11 @@ NOT_FOUND = HTTPException(404, 'Not found')
 
 
 def hashed_password(password: str) -> bytes:
-    """
-
-    :rtype: object
-    """
     return argon2.using(rounds=4, salt_size=128).hash(password)
 
 
 def verify_password(password: str, hashed: str) -> bool:
-    try:
-        return argon2.verify(password, hashed)
-    except Exception:
-        return False
+    return argon2.verify(password, hashed)
 
 
 def make_session_token() -> str:
@@ -37,10 +30,7 @@ def hashed_token(token: str) -> bytes:
 
 
 def verify_token(token: str, hash: bytes) -> bytes:
-    try:
-        return sha256_crypt.verify(token, hash)
-    except Exception:
-        return False
+    return sha256_crypt.verify(token, hash)
 
 
 def create_session(redis, login, key, exp, user_id):

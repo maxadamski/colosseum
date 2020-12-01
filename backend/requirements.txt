@@ -7,3 +7,4 @@ pugsql
 redis
 markdown
 python-multipart
+argon2_cffi
