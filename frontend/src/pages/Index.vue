@@ -13,23 +13,39 @@ export default {
         isAutomake: null,
         firstPlayer: 'you',
         invitedStudent: '',
-        submissionFile: null
+        submissionFile: null,
+        countdown: 'time',
+        timer: null,
     }),
+    created() {
+        this.countdown = this.deadlineCountdown()
+        this.timer = setInterval((() => this.countdown = this.deadlineCountdown()).bind(this), 1000)
+    },
+    beforeDestroy() {
+        clearInterval(this.timer)
+    },
     computed: {
-        deadlineCountdown() {
-            const dt = datediff(now(), new Date(this.$s.game.deadline))
-            let res = ''
-            const plural = (x) => x == 1 ? '' : 's'
-            if (dt.months > 0) res += `${dt.months} month${plural(dt.months)}`
-            if (dt.days > 0) res += ` ${dt.days} day` + plural(dt.days)
-            if (!res) res += `${dt.hours} hour${plural(dt.hours)} and ${dt.minutes} minute${plural(dt.minutes)}`
-            return res
-        },
         isLeader() {
             return this.$s.studentId === this.$s.teamLeaderId
         }
     },
     methods: {
+        deadlineCountdown() {
+            const dt = datediff(now(), new Date('2020-12-03 21:44'))
+            let res = ''
+            const plural = (x) => x == 1 ? '' : 's'
+            if (dt.months > 0) {
+                res += `${dt.months} month${plural(dt.months)}`
+            } else if (dt.days > 0) {
+                res += ` ${dt.days} day` + plural(dt.days)
+            } else {
+                if (dt.hours > 0) res += `${dt.hours} hour${plural(dt.hours)} `
+                if (dt.minutes > 0) res += `${dt.minutes} minute${plural(dt.minutes)} `
+                if (dt.seconds > 0) res += `${dt.seconds} second${plural(dt.seconds)}`
+                else return `Competition ended`
+            }
+            return `${res} left`
+        },
         async changeTeamName() {
             const [teamPatch, teamPatchStatus] = await this.safeApi('PATCH', `/teams/${this.$s.teamId}`, JSON.stringify({new_name: this.$s.teamName}))
             if (teamPatchStatus === 403) {
@@ -110,7 +126,7 @@ export default {
     div
         h1.mb-0 {{ $s.game.name }}
         h4 {{ $s.game.description }}
-        b {{ deadlineCountdown }} left
+        b {{ countdown }}
 
         nav.tabs(v-if='!isAuthorized')
             button(v-for='x in publicTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
@@ -186,7 +202,7 @@ export default {
                     h4.nowrap Player code
                     label.input-file
                         input(type='file' @change="submissionOnFileChanged")
-                        span Upload
+                        span &#8613; Upload
 
                 .vflex
                     h4 Environment

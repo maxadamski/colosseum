@@ -4,6 +4,7 @@ const dateRegex = /^([1-9][0-9]{3,})-(0?[1-9]|1[012])-(0?[1-9]|[12][0-9]|3[01])$
 export default {
     name: 'GameWizard',
     data: () => ({
+        editGame: null,
         name: null,
         subtitle: null,
         deadline: null,
@@ -43,8 +44,9 @@ export default {
         },
     },
     mounted() {
-        if (this.$route.query.edit !== undefined) {
-            console.log(`edit game ${this.$route.query.edit}`)
+        this.editGame = this.$route.query.edit
+        if (this.editGame !== undefined) {
+            console.log(`edit game ${this.editGame}`)
             // TODO: populate players with judge and refs for this game
         }
     },
@@ -54,7 +56,7 @@ export default {
 
 <template lang="pug">
     div
-        h2 Create Game
+        h2 {{editGame ? 'Edit' : 'Create'}} Game
 
         h4 Basic Information
         .hflex.flex-wrap.hlist-1
@@ -82,7 +84,7 @@ export default {
                 td
                     label.input-file
                         input(type='file' :accept='res.ext' @change='res.file = $event.target.file[0]')
-                        span Upload
+                        span &#8613; Upload
 
 
         h4 Game Code
@@ -118,7 +120,7 @@ export default {
                     td {{ player.env || 'None' }}
                     td {{ player.file !== null ? 'Ready' : (player.file === true ? 'Uploaded' : 'None') }}
                     td.hcombo
-                        button(@click='editPlayer = {...player}' :disabled='editPlayer || newPlayer') Edit
+                        button(@click='editPlayer = {...player}' :disabled='editPlayer || newPlayer') &#10002; Edit
                         button(v-if='player.id !== -1' @click='deletePlayer(player)' :disabled='editPlayer || newPlayer') Delete
 
             tr(v-if='newPlayer !== null')
@@ -133,11 +135,11 @@ export default {
                 td
                     label.input-file
                         input(type='file' @change='newPlayer.file = $event.target.files[0]')
-                        span Upload
+                        span &#8613; Upload
                     
                 td.hcombo
                     button(@click='addPlayer(newPlayer); newPlayer = null' :disabled='!newPlayer.name || !newPlayer.env || newPlayer.file === null') Submit
-                    button(@click='newPlayer = false; newPlayer = null') Cancel
+                    button(@click='newPlayer = false; newPlayer = null') &#10539; Cancel
             
             tr(v-else)
                 td New Player
@@ -148,7 +150,7 @@ export default {
 
         h4 Save
         button.w-100.mb-2 Save
-        button.w-100(@click='$router.go(-1)') Cancel
+        button.w-100(@click='$router.go(-1)') &#10005; Cancel
 
 </template>
 
