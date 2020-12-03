@@ -16,7 +16,7 @@ export default {
         header
             router-link.header-left(to='/')
                 img(src='../static/logo.png')
-                span AI Colosseum
+                span.min-tablet AI Colosseum
             nav
                 router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
         main

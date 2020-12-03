@@ -59,63 +59,38 @@ th, td
     vertical-align center
     font-size 15px
 
-td button
-    font-size 13px
-    padding u1 u2
-
 // --- CONTROLS ---
 
-button
-    all unset
+button, input, .input-file
+    background body-color
 
-button, .input-file
-    text-align center
+button, select, .input-file
+    &:not([disabled])
+        &:hover
+            background-color hover-color
 
-input, button, .select
+        &:active
+            background-color active-color
+
+    &:disabled
+        background-color hover-color
+        color gray
+        cursor not-allowed
+
+button, input, select, .input-file
     border 1px solid decor-color
     border-radius r1
 
-button, select, .input-file
-    background body-color
-
-    &:hover
-        background hover-color
-
-    &:active
-        background active-color
-
-input
-    word-wrap break-word
-    word-break break-all
-
-button, select, input
+button, input, optgroup, select, .input-file, .input-checkbox, .input-radio
     margin 0
-    padding u2 u3
-
-button, select, input, .select, .input-radio, .input-checkbox, .input-file
-    max-height 32px
-    white-space nowrap
     font-size s1
+    padding u2 u3
+    max-height 32px
     color text-color
     cursor pointer
-
-select
-    outline none
-    border none
-    appearance none
-    background none
-    min-width 15ch
-    max-width 30ch
-
-.select
     white-space nowrap
-    display inline-block
-    max-width 100%
-    align-items center
-
-.select:after
-    content '\1F863'
-    padding-right 1ch
+    word-wrap break-word
+    word-break break-all
 
 label.input-radio, label.input-checkbox
     padding u2 0
@@ -123,33 +98,26 @@ label.input-radio, label.input-checkbox
     justify-items space-between
     align-items center
 
-    input
+    > input
         margin-right 0.5ch
     
-label.input-file
-    border 1px solid decor-color
-    border-radius r1
-    display inline-block
-    font-size s1
-    padding u2 u3
+label.input-file > input
+    position absolute
+    width 1px
+    opacity 0
 
-    input
-        position absolute
-        width 1px
-        opacity 0
 
-// --- DARK COLORS ---
+select
+    padding u2 30px u2 (u3 - 5px)
+    background #fff url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='4' height='5' viewBox='0 0 4 5'%3e%3cpath fill='%2333333' d='M2 0L0 2h4zm0 5L0 3h4z'/%3e%3c/svg%3e") no-repeat right .75rem center/8px 10px
+    appearance none
 
-@media (prefers-color-scheme: dark)
-    hr
-        border-color decor-color-dark
+td, th
+    button, input, select, optgroup, .input-file, .input-checkbox, .input-radio
+        max-height 24px
+        font-size 13px
+        padding u1 u2
 
-    body
-        color text-color-dark
-        background body-color-dark
-
-    a:link
-        color link-color-dark
-
-    a:visited
-        color visited-color-dark
+    select
+        padding-top 2px
+        padding-right 30px

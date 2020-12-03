@@ -91,6 +91,7 @@ for x, i in units
 .vflex
     display flex
     flex-direction column
+    align-items start
 
 .flex-wrap
     flex-wrap wrap
@@ -115,6 +116,7 @@ hflex(justify, align)
 
 
 .hcombo
+    display inline-flex
     white-space nowrap
     > *
         border-radius 0
@@ -141,3 +143,13 @@ for x, i in units
 
 .debug
     border 2px dashed red
+
+.nowrap
+    white-space nowrap
+
+.invalid
+    text-decoration underline wavy red
+
+@media (max-width: 769px)
+    .min-tablet
+        display none

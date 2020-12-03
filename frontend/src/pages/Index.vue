@@ -7,9 +7,10 @@ export default {
         tab: 'overview',
         studentTabs: ['overview', 'rules', 'play', 'team', 'submit'],
         teacherTabs: ['overview', 'rules', 'play'],
+        publicTabs: ['overview', 'rules'],
         player: 'Naive Player',
-        submitEnv: '1',
-        isAutomake: true,
+        submitEnv: null,
+        isAutomake: null,
         firstPlayer: 'you',
         invitedStudent: '',
         submissionFile: null
@@ -101,7 +102,7 @@ export default {
             this.$s.teamSubmissions[prevPrimary].primary = false
             this.$s.teamSubmissions[index].primary = true
         }
-    }
+    },
 }
 </script>
 
@@ -111,7 +112,9 @@ export default {
         h4 {{ $s.game.description }}
         b {{ deadlineCountdown }} left
 
-        nav.tabs(v-if='$s.userType == "teacher"')
+        nav.tabs(v-if='!isAuthorized')
+            button(v-for='x in publicTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
+        nav.tabs(v-else-if='$s.userType == "teacher"')
             button(v-for='x in teacherTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
         nav.tabs(v-else)
             button(v-for='x in studentTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
@@ -122,17 +125,19 @@ export default {
         div(v-if='tab == "rules"')
             div(v-html='$s.game.rules')
 
-        div(v-if='tab == "play"')
+        div(v-if='tab == "play"' v-once)
             iframe.widget(:src='$s.game.widget')
 
 
-        div(v-if='tab == "team"')
+        div(v-if='tab == "team" && isAuthorized')
             h3 Team
 
-            h4(v-if="isLeader") Team Name
-                .hcombo
+            h4 Team Name
+                .hcombo(v-if='idLeader')
                     input(type='text' v-model='$s.teamName')
                     button(@click="changeTeamName") Save
+                div(v-else)
+                    small {{$s.teamName}}
 
             h4 Team Members
             table
@@ -158,8 +163,8 @@ export default {
                         button(@click="safeApi('DELETE', `/students/${$s.teamId}/invitations/${invited.id}`); $delete($s.teamInvitations, index)") Cancel Invite
 
             h3 Invitations
-            .hflex.hlist-3.fy-center(v-if="($s.studentInvitations).length")
-                span(v-for="(invitation, index) in $s.studentInvitations" :key="invitation.id")
+            .hflex.hlist-3.fy-center(v-if="$s.studentInvitations.length")
+                div(v-for="(invitation, index) in $s.studentInvitations" :key="invitation.id")
                     b {{ invitation.leader }}
                     span  invited you to team 
                     b {{ invitation.name }}
@@ -178,16 +183,16 @@ export default {
 
             .hflex.hlist-6
                 .vflex
-                    h4 Player code
+                    h4.nowrap Player code
                     label.input-file
                         input(type='file' @change="submissionOnFileChanged")
-                        | Upload
+                        span Upload
 
                 .vflex
                     h4 Environment
-                    .select
-                        select(v-model='submitEnv')
-                            option(v-for='env in $s.envs' :value='env.id') {{env.name}}
+                    select(v-model='submitEnv')
+                        option(disabled :value='null') Click to select
+                        option(v-for='env in $s.envs' :value='env.id') {{env.name}}
 
                 .vflex
                     h4 Execution
@@ -202,11 +207,11 @@ export default {
                 .vflex
                     h4 Actions
                     .hflex.hlist-1
-                        button(@click="sendSubmission()") Submit
+                        button(@click="sendSubmission()" :disabled='!submissionFile || !submitEnv || !isAutomake') Submit
 
 
             h3 My Submissions
-            table.submission-table
+            table.submission-table(v-if='$s.teamSubmissions.length > 0')
                 tr
                     th #
                     th Date
@@ -226,6 +231,10 @@ export default {
                     td {{ sub.score }}
                     td(v-if="isLeader")
                         button(v-if='!sub.primary' @click="changePrimarySubmission(sub.id, index)") Set Primary
+
+            div(v-else)
+                p Your team does not have any submissions yet
+
 </template>
 
 <style lang="stylus" scoped>

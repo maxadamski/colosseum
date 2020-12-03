@@ -32,8 +32,8 @@ Vue.use(SimpleState, {
         name: 'Placeholder Name',
         description: 'Placeholder Description',
         deadline: new Date('2020-12-08'),
-        overview: '<h2>Overview of the game</h2><p>A rendered markdown document</p>',
-        rules: '<h2>Rules of the game</h2><p>A rendered markdown document</p>',
+        overview: 'Loading...',
+        rules: 'Loading...',
         widget: 'http://localhost:8000/game/4/interactive.html'
     },
     refPlayers: [{id: 1, name: 'Player1'}, {id: 2, name: 'Player2'}, {id: 3, name: 'Player3'}],
@@ -173,7 +173,7 @@ const router = new VueRouter({
     routes: [
         {path: '/', component: () => import('./pages/Index.vue')},
         {path: '/profile', component: () => import('./pages/Profile.vue')},
-        {path: '/edit-game', component: () => import('./pages/EditGame.vue')},
+        {path: '/game-wizard', component: () => import('./pages/GameWizard.vue'), props: true},
         {path: '/help', component: () => import('./pages/Help.vue')},
         {path: '/404', component: () => import('./pages/NotFound.vue')},
         {path: '*', redirect: '/404'},
