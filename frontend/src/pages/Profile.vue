@@ -137,7 +137,7 @@ export default {
                     td New game
                     td.hcombo
                         router-link(to='/game-wizard')
-                            button Create
+                            button + Create
 
             h3 My Groups
             table
@@ -169,7 +169,7 @@ export default {
                 tr(v-else)
                     td New group
                     td
-                        button(@click='newGroup = "New group"') Create
+                        button(@click='newGroup = "New group"') + Create
 </template>
 
 <style lang="stylus" scoped>

@@ -93,7 +93,6 @@ export default {
                 th Env
                 th Code
                 th
-                    button(@click='newPlayer = {name: "New Player", file: null}' :disabled='editPlayer !== null || newPlayer !== null') + New player
 
             tr(v-for="player in players" :key="player.id")
                 template(v-if='editPlayer !== null && editPlayer.id === player.id')
@@ -139,10 +138,17 @@ export default {
                 td.hcombo
                     button(@click='addPlayer(newPlayer); newPlayer = null' :disabled='!newPlayer.name || !newPlayer.env || newPlayer.file === null') Submit
                     button(@click='newPlayer = false; newPlayer = null') Cancel
+            
+            tr(v-else)
+                td New Player
+                td
+                td
+                td
+                    button(@click='newPlayer = {name: "New Player", file: null}' :disabled='editPlayer !== null || newPlayer !== null') + Create
 
         h4 Save
         button.w-100.mb-2 Save
-        button.w-100 Cancel
+        button.w-100(@click='$router.go(-1)') Cancel
 
 </template>
 
