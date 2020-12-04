@@ -75,7 +75,6 @@ def send(f, tag, *args):
 
     head = struct.pack('<bLL', tag, len(type), len(data))
     pack = head + type + data
-    print(hexdump(pack))
     return os.write(f, pack)
 
 def recv(f):
