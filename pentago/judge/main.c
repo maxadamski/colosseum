@@ -86,10 +86,6 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
             case MSG_GET_MOVES: {
                 PentagoMoves moves;
                 moves = get_available_moves(&p->game);
-                if (moves.count == 0) {
-                    printf("MSG_GET_MOVES error: no moves available\n");
-                    return PLAYER_ILLEGAL;
-                }
                 msendf(in, MSG_GET_MOVES, "%u[%] %u[%] %u[%]",
                         moves.i, moves.count,
                         moves.j, moves.count,
