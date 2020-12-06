@@ -112,8 +112,6 @@ export default {
                 if (this.editGame === this.$s.game.id.toString()) {
                     const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
                     this.$s.game = gameData
-                    const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
-                    this.$s.game.widget = gameWidget.html
                 }
                 await this.$router.push({path: '/profile'})
             }

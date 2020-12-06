@@ -14,12 +14,12 @@ export default {
         firstPlayer: 'you',
         invitedStudent: '',
         submissionFile: null,
-        countdown: 'time',
+        countdown: 'time left',
         timer: null,
     }),
     created() {
-        this.countdown = this.deadlineCountdown()
-        this.timer = setInterval((() => this.countdown = this.deadlineCountdown()).bind(this), 1000)
+        this.updateCountdown()
+        this.timer = setInterval((() => this.updateCountdown()).bind(this), 1000)
     },
     beforeDestroy() {
         clearInterval(this.timer)
@@ -28,8 +28,9 @@ export default {
         isLeader() {
             return this.$s.studentId === this.$s.teamLeaderId
         },
-        deadlineCountdown() {
-            const dt = datediff(now(), new Date('2020-12-03 21:44'))
+        updateCountdown() {
+            if (this.$s.game.deadline === null) return
+            const dt = datediff(now(), this.$s.game.deadline)
             let res = ''
             const plural = (x) => x == 1 ? '' : 's'
             if (dt.months > 0) {
@@ -42,7 +43,7 @@ export default {
                 if (dt.seconds > 0) res += `${dt.seconds} second${plural(dt.seconds)}`
                 else return `Competition ended`
             }
-            return `${res} left`
+            this.countdown = `${res} left`
         },
         async changeTeamName() {
             const [teamPatch, teamPatchStatus] = await this.safeApi('PATCH', `/teams/${this.$s.teamId}`, JSON.stringify({new_name: this.$s.teamName}))
@@ -164,18 +165,18 @@ export default {
             div(v-html='$s.game.rules')
 
         div(v-if='tab == "play"' v-once)
-            iframe.widget(:src='$s.game.widget')
+            iframe.widget(:src='`${apiUrl}/games/${$s.game.id}/widget`')
 
 
         div(v-if='tab == "team" && isAuthorized')
             h3 Team
 
             h4 Team Name
-                .hcombo(v-if='isLeader')
-                    input(type='text' v-model='$s.teamName')
-                    button(@click="changeTeamName") Save
-                div(v-else)
-                    small {{$s.teamName}}
+            .hcombo(v-if='isLeader')
+                input(type='text' v-model='$s.teamName')
+                button(@click="changeTeamName") Save
+            div(v-else)
+                small {{$s.teamName}}
 
             h4 Team Members
             table
@@ -212,9 +213,9 @@ export default {
             p(v-else) There are no invitations 
 
             h4(v-if="isLeader") Invite Member
-                .hcombo
-                    input(type='text' placeholder='Student nickname', v-model="invitedStudent")
-                    button(@click="inviteStudent()") Send
+            .hcombo
+                input(type='text' placeholder='Student nickname', v-model="invitedStudent")
+                button(@click="inviteStudent()") Send
 
             h3 Team Actions
             button(@click="leaveTeam") Leave team

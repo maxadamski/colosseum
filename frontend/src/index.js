@@ -3,7 +3,7 @@ import Vue from 'vue'
 import VueRouter from 'vue-router'
 import App from './pages/App.vue'
 import {SimpleState, ReactiveStorage, SimpleApi} from './plugins.js'
-import {unwrap} from './common.js'
+import {now, unwrap} from './common.js'
 
 const develApiUrl = 'http://localhost:8000'
 const finalApiUrl = 'https://colosseum.put.poznan.pl/api'
@@ -31,10 +31,9 @@ Vue.use(SimpleState, {
         id: 1,
         name: 'Placeholder Name',
         description: 'Placeholder Description',
-        deadline: new Date('2020-12-08'),
+        deadline: now(),
         overview: 'Loading...',
         rules: 'Loading...',
-        widget: 'http://localhost:8000/game/4/interactive.html'
     },
     refPlayers: [{id: 1, name: 'Player1'}, {id: 2, name: 'Player2'}, {id: 3, name: 'Player3'}],
 
@@ -87,6 +86,9 @@ Vue.use(SimpleApi, {
 })
 
 Vue.mixin({
+    data: () => ({
+        apiUrl: apiUrl,
+    }),
     computed: {
         isAuthorized() {
             const key = this.$local.sessionKey
@@ -128,8 +130,7 @@ Vue.mixin({
                 console.log(`No active game! (status code ${gameStatus})`)
             } else {
                 this.$s.game = gameData
-
-                this.$s.game.widget = `${apiUrl}/games/${gameData.id}/widget`
+                this.$s.game.deadline = new Date(gameData.deadline)
 
                 const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
                 this.$s.refPlayers = refPlayers

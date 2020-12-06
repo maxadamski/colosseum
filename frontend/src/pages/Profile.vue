@@ -36,11 +36,8 @@ export default {
             await this.safeApi('POST', `/games/activate/${gameId}`)
             const [groupsData, groupsStatus] = await this.safeApi('GET', `/groups`)
             this.$s.groups = groupsData
-
             const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
             this.$s.game = gameData
-            const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
-            this.$s.game.widget = gameWidget.html
             const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
             this.$s.refPlayers = refPlayers
             const [gamesData, gamesStatus] = await this.safeApi('GET', `/games`)
@@ -137,17 +134,14 @@ export default {
                 tr(v-for='(game,index) in $s.games' :key='game.id')
                     td {{ game.name }}
                     td
-                        button(@click="activateGame(game.id)") {{ game.id === $s.game.id ? 'Reset' : 'Activate' }}
-
                         .hcombo
-                            router-link(:to="`/game-wizard?edit=${game.id}`")
-                                button Edit
+                            button(@click="activateGame(game.id)") {{ game.id === $s.game.id ? 'Reset' : 'Activate' }}
+                            router-link(tag='button' :to="`/game-wizard?edit=${game.id}`") Edit
                             button(v-if='game.id !== $s.game.id' @click="safeApi('DELETE', `/games/${game.id}`); $delete($s.games, index)") Delete
                 tr
                     td New game
                     td.hcombo
-                        router-link(to='/game-wizard')
-                            button + Create
+                        router-link(tag='button' to='/game-wizard') + Create
 
             h3 My Groups
             table
