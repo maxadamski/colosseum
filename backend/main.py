@@ -115,6 +115,8 @@ async def read_student(session=Depends(student_session)):
 async def update_student(data: StudentPatch, session=Depends(student_session)):
     new_nickname, new_group_id = data.nickname, data.group_id
     student_id = session['user_id']
+    if new_nickname and db.get_student_by_nickname(nickname=new_nickname):
+        raise CONFLICT
     db.update_student(student_id=student_id, new_nickname=new_nickname, new_group_id=new_group_id)
 
 
@@ -122,6 +124,7 @@ async def update_student(data: StudentPatch, session=Depends(student_session)):
 async def remove_student(session=Depends(student_session)):
     student_id = session['user_id']
     db.remove_student(student_id=student_id)
+    delete_session(student_sessions, session['login'])
 
 
 #
@@ -159,6 +162,12 @@ async def get_student_team(session=Depends(student_session)):
     return db.get_student_team(student_id=student_id)
 
 
+@app.post('/students/me/team/leave')
+async def leave_student_team(session=Depends(student_session)):
+    student_id = session['user_id']
+    return db.remove_student_from_team(student_id=student_id)
+
+
 @app.get('/team/{id}/members')
 async def get_team_members(id: int):
     return db.get_team_members(team_id=id)
@@ -176,10 +185,12 @@ async def update_team(id: int, new_name: str = Body(..., max_length=50, embed=Tr
     if student_id != student_team['leader_id']:
         raise FORBIDDEN
     new_name = new_name.strip()
-    if new_name != "":
-        return db.update_team_name(team_id=id, new_name=new_name)
-    else:
+    if new_name == "":
         raise HTTPException(422, 'Cannot pass empty name!')
+    elif db.get_team_by_name(name=new_name):
+        raise CONFLICT
+    else:
+        return db.update_team_name(team_id=id, new_name=new_name)
 
 
 @app.patch('/teams/{team_id}/leader/{leader_id}')
@@ -198,8 +209,11 @@ async def invite_to_team(team_id: int, nickname: str, session=Depends(student_se
     if student_id != student_team['leader_id']:
         raise FORBIDDEN
     invited_student = db.get_student_by_nickname(nickname=nickname)
-    if invited_student is None:
+    if db.get_student_by_nickname(nickname=nickname) is None:
         raise NOT_FOUND
+    if db.get_team_member(team_id=team_id, student_id=student_id) or \
+            db.get_team_invitations(team_id=team_id, student_id=student_id):
+        raise CONFLICT
     return db.invite_student_to_team(student_id=invited_student['id'], team_id=student_team['id'])
 
 
@@ -300,11 +314,15 @@ async def get_groups():
 
 @app.post('/groups')
 async def create_group(name: str = Body(..., embed=True), session=Depends(teacher_session)):
+    if db.get_group_by_name(name=name):
+        raise CONFLICT
     return db.insert_group(name=name)
 
 
 @app.patch('/groups/{id}')
 async def update_group_name(id: int, name: str = Body(..., embed=True), session=Depends(teacher_session)):
+    if db.get_group_by_name(name=name):
+        raise CONFLICT
     db.update_group(group_id=id, name=name)
 
 
@@ -347,15 +365,17 @@ async def get_game(id: int, session=Depends(teacher_session)):
 
 
 @app.post('/games')
-async def create_game(name: str = Body(...), description: str = Body(...), is_automake: bool = Body(...),
+async def create_game(name: str = Body(...), description: str = Body(...),
                       environment_id: int = Body(...), deadline: date = Body(...),
                       executables: UploadFile = File(...),
                       widget: UploadFile = File(...),
                       overview: UploadFile = File(...),
                       rules: UploadFile = File(...), session=Depends(teacher_session)):
+    if db.get_game_by_name(name=name):
+        raise CONFLICT
+
     game_id = db.insert_game(name=name,
                              description=description,
-                             is_automake=is_automake,
                              deadline=deadline,
                              environment_id=environment_id)
 
@@ -370,16 +390,17 @@ async def create_game(name: str = Body(...), description: str = Body(...), is_au
 
 
 @app.patch('/games/{id}')
-async def update_game(id: int, name: str = None, description: str = None, is_automake: bool = None,
-                      environment_id: int = None, deadline: Optional[date] = None,
+async def update_game(id: int, name: str = Body(None), description: str = Body(None),
+                      environment_id: int = Body(None), deadline: Optional[date] = Body(None),
                       executables: Optional[UploadFile] = File(None),
                       widget: Optional[UploadFile] = File(None),
                       overview: Optional[UploadFile] = File(None),
                       rules: Optional[UploadFile] = File(None), session=Depends(teacher_session)):
+    if name and db.get_group_by_name(name=name):
+        raise CONFLICT
     db.update_game(game_id=id,
                    new_name=name,
                    new_description=description,
-                   new_is_automake=is_automake,
                    new_deadline=deadline,
                    new_environment_id=environment_id)
 
@@ -428,12 +449,11 @@ async def get_game_reference_submissions(game_id: int):
 
 
 @app.post('/games/{game_id}/ref_submissions')
-async def create_game_reference_submission(game_id: int, name: str = Body(...), is_automake: bool = Body(...),
+async def create_game_reference_submission(game_id: int, name: str = Body(...),
                                            environment_id: int = Body(...),
                                            executables: UploadFile = File(...), session=Depends(teacher_session)):
     teacher_id = session['user_id']
     submission_id = db.insert_game_ref_submission(name=name,
-                                                  is_automake=is_automake,
                                                   environment_id=environment_id,
                                                   teacher_id=teacher_id, game_id=game_id)
 
@@ -445,12 +465,12 @@ async def create_game_reference_submission(game_id: int, name: str = Body(...), 
 
 
 @app.patch('/games/{game_id}/ref_submissions/{id}')
-async def update_game_reference_submission(game_id: int, id: int, name: str = None, is_automake: bool = None,
+async def update_game_reference_submission(game_id: int, id: int, name: str = None,
                                            environment_id: int = None,
                                            executables: Optional[UploadFile] = File(None),
                                            session=Depends(teacher_session)):
     db.update_ref_submission(submission_id=id, new_name=name,
-                             new_is_automake=is_automake, new_environment_id=environment_id)
+                             new_environment_id=environment_id)
 
     if executables:
         submission_dir = get_game_submission_directory(game_id, id)

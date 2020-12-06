@@ -10,11 +10,11 @@ WHERE id = :submission_id;
 
 -- :name get_team_submissions :many
 SELECT s.id,
-       to_char(s.submission_time, 'DD/MM/YYYY HH24:MI:SS') as date,
-       e.name AS env,
+       to_char(s.submission_time, 'DD/MM/YYYY HH24:MI:SS') AS date,
+       e.name                                              AS env,
        s.status,
-       s.is_primary as "primary",
-       0 as score
+       s.is_primary                                        AS "primary",
+       0                                                   AS score
 FROM team_submissions s
          JOIN environments e ON s.environment_id = e.id
 WHERE s.team_id = :team_id;
@@ -32,23 +32,21 @@ SET is_primary = TRUE
 WHERE id = :submission_id;
 
 -- :name get_game_ref_submissions :many
-SELECT id, submission_time, name, is_automake, status, environment_id
+SELECT id, submission_time, name, status, environment_id
 FROM ref_submissions
 WHERE game_id = :game_id;
 
 -- :name insert_game_ref_submission :scalar
 INSERT INTO ref_submissions (name,
-                             is_automake,
                              environment_id,
                              teacher_id,
                              game_id)
-VALUES (:name, :is_automake, :environment_id, :teacher_id, :game_id)
+VALUES (:name, :environment_id, :teacher_id, :game_id)
 RETURNING id;
 
 -- :name update_ref_submission
 UPDATE ref_submissions
 SET name            = coalesce(:new_name, name),
-    is_automake     = coalesce(:new_is_automake, is_automake),
     environment_id  = coalesce(:new_environment_id, environment_id),
     submission_time = default
 WHERE id = :submission_id;

@@ -11,6 +11,7 @@ BAD_TOKEN = HTTPException(401, 'Invalid credentials', {'WWW-Authenticate': 'Bear
 FORBIDDEN = HTTPException(403, 'Forbidden')
 SESSION_EXPIRED = HTTPException(403, 'Session expired')
 NOT_FOUND = HTTPException(404, 'Not found')
+CONFLICT = HTTPException(409, 'Conflict')
 
 
 def hashed_password(password: str) -> bytes:

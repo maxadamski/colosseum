@@ -53,40 +53,48 @@ VALUES ('student6',
         'student6nick',
         3);
 
-INSERT INTO team_invitations(team_id, student_id) VALUES (2, 1);
-INSERT INTO team_invitations(team_id, student_id) VALUES (3, 1);
-INSERT INTO team_invitations(team_id, student_id) VALUES (4, 1);
-INSERT INTO team_invitations(team_id, student_id) VALUES (5, 1);
-INSERT INTO team_invitations(team_id, student_id) VALUES (6, 1);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (2, 1);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (3, 1);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (4, 1);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (5, 1);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (6, 1);
 
-INSERT INTO team_invitations(team_id, student_id) VALUES (3, 2);
-INSERT INTO team_invitations(team_id, student_id) VALUES (4, 2);
-INSERT INTO team_invitations(team_id, student_id) VALUES (1, 3);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (3, 2);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (4, 2);
+INSERT INTO team_invitations(team_id, student_id)
+VALUES (1, 3);
 
-INSERT INTO games(name, description, files_path, deadline, is_automake, is_active, environment_id)
+INSERT INTO games(name, description, files_path, deadline, is_active, environment_id)
 VALUES ('Pentago', 'Pentago game for 2 players', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1',
-        '2021-10-20', TRUE, TRUE, 1);
+        '2021-10-20', TRUE, 1);
 
-INSERT INTO ref_submissions(name, is_automake, files_path, environment_id, teacher_id, game_id)
-VALUES ('Easy Player', TRUE, '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1/submissions/1', 1, 1,
+INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
+VALUES ('Easy Player', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1/submissions/1', 1, 1,
         1);
 
-INSERT INTO ref_submissions(name, is_automake, files_path, environment_id, teacher_id, game_id)
-VALUES ('Medium Player', FALSE, '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1/submissions/2', 2, 1,
+INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
+VALUES ('Medium Player', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1/submissions/2', 2, 1,
         1);
 
-INSERT INTO ref_submissions(name, is_automake, files_path, environment_id, teacher_id, game_id)
-VALUES ('Hard Player', TRUE, '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1/submissions/3', 1, 1,
+INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
+VALUES ('Hard Player', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/1/submissions/3', 1, 1,
         1);
 
-INSERT INTO games(name, description, files_path, deadline, is_automake, is_active, environment_id)
+INSERT INTO games(name, description, files_path, deadline, is_active, environment_id)
 VALUES ('Chess', 'Chess game for 2 players', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/2',
-        '2025-10-20', TRUE, FALSE, 2);
+        '2025-10-20', FALSE, 2);
 
-INSERT INTO ref_submissions(name, is_automake, files_path, environment_id, teacher_id, game_id)
-VALUES ('Easy Player', TRUE, '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/2/submissions/4', 1, 1,
+INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
+VALUES ('Easy Player', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/2/submissions/4', 1, 1,
         2);
 
-INSERT INTO ref_submissions(name, is_automake, files_path, environment_id, teacher_id, game_id)
-VALUES ('Medium Player', FALSE, '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/2/submissions/5', 2, 1,
+INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
+VALUES ('Medium Player', '/Users/sgilewski/Projects/colosseum_backend/backend/files/games/2/submissions/5', 2, 1,
         2);

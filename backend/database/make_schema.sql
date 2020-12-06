@@ -32,7 +32,7 @@ CREATE TABLE students
     login    VARCHAR(50) NOT NULL UNIQUE,
     password CHAR(226)   NOT NULL,
     nickname VARCHAR(50) NOT NULL UNIQUE,
-    group_id INTEGER     NOT NULL REFERENCES groups (id) ON DELETE SET NULL
+    group_id INTEGER     REFERENCES groups (id) ON DELETE SET NULL
 );
 
 CREATE TABLE teams
@@ -66,10 +66,9 @@ CREATE TABLE games
 (
     id             SERIAL PRIMARY KEY,
     name           VARCHAR(50) NOT NULL UNIQUE,
-    description       VARCHAR(100),
+    description    VARCHAR(100),
     files_path     VARCHAR(1024) UNIQUE,
     deadline       TIMESTAMP   NOT NULL,
-    is_automake    BOOLEAN     NOT NULL,
     is_active      BOOLEAN     NOT NULL DEFAULT FALSE,
     environment_id INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE
 );
@@ -91,11 +90,10 @@ CREATE TABLE ref_submissions
     id              SERIAL PRIMARY KEY,
     submission_time TIMESTAMP   NOT NULL DEFAULT CURRENT_TIMESTAMP,
     name            VARCHAR(50) NOT NULL,
-    is_automake     BOOLEAN     NOT NULL,
     files_path      VARCHAR(1024) UNIQUE,
     status          VARCHAR(20),
     environment_id  INTEGER     NOT NULL REFERENCES environments (id) ON DELETE CASCADE,
-    teacher_id      INTEGER REFERENCES teachers (id) ON DELETE SET NULL,
+    teacher_id      INTEGER     REFERENCES teachers (id) ON DELETE SET NULL,
     game_id         INTEGER REFERENCES games (id) ON DELETE CASCADE
 );
 

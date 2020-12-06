@@ -2,6 +2,11 @@
 SELECT *
 FROM groups;
 
+-- :name get_group_by_name :one
+SELECT *
+FROM groups
+WHERE name = :name;
+
 -- :name insert_group :scalar
 INSERT INTO groups (name)
 VALUES (:name)

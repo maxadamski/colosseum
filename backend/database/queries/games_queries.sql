@@ -7,6 +7,11 @@ SELECT *
 FROM games
 WHERE id = :game_id;
 
+-- :name get_game_by_name :one
+SELECT *
+FROM games
+WHERE name = :name;
+
 -- :name get_active_game :one
 SELECT id, name, description, to_char(deadline, 'YYYY-MM-DD') as deadline
 FROM games
@@ -15,10 +20,9 @@ WHERE is_active = TRUE;
 -- :name insert_game :scalar
 INSERT INTO games (name,
                    description,
-                   is_automake,
                    deadline,
                    environment_id)
-VALUES (:name, :description, :is_automake, :deadline, :environment_id)
+VALUES (:name, :description, :deadline, :environment_id)
 RETURNING id;
 
 -- :name update_game_path
@@ -30,7 +34,6 @@ WHERE id = :game_id;
 UPDATE games
 SET name           = coalesce(:new_name, name),
     description       = coalesce(:new_description, description),
-    is_automake    = coalesce(:new_is_automake, is_automake),
     deadline       = coalesce(:new_deadline, deadline),
     environment_id = coalesce(:new_environment_id, environment_id)
 WHERE id = :game_id;

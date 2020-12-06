@@ -3,6 +3,11 @@ SELECT id, name, leader_id
 FROM teams
 WHERE id = :team_id;
 
+-- :name get_team_by_name :one
+SELECT id, name, leader_id
+FROM teams
+WHERE name = :name;
+
 -- :name get_student_team :one
 SELECT t.id, t.name, t.leader_id
 FROM team_members tu
@@ -24,6 +29,12 @@ UPDATE team_members
 SET team_id = :team_id
 WHERE student_id = :student_id;
 
+-- :name get_team_member :one
+SELECT team_id, student_id
+FROM team_members
+WHERE team_id = :team_id
+  AND student_id = :student_id;
+
 -- :name get_team_members :many
 SELECT u.id, u.nickname
 FROM team_members tu
@@ -33,8 +44,13 @@ WHERE tu.team_id = :team_id;
 -- :name remove_student_from_team
 DELETE
 FROM team_members
-WHERE student_id = :student_id
-  AND team_id = :team_id;
+WHERE student_id = :student_id;
+
+-- :name get_team_invitation :one
+SELECT team_id, student_id
+FROM team_invitations
+WHERE team_id = :team_id
+  AND student_id = :student_id;
 
 -- :name get_team_invitations :many
 SELECT s.id, s.nickname
