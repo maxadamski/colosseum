@@ -8,13 +8,26 @@ export default {
         editGroup: null,
     }),
     methods: {
-        addGroup(name) {
+        async addGroup(name) {
             this.$s.groups.push({id: -1, name: name})
+            const [groupData, groupStatus] = await this.safeApi('POST', `/groups`, JSON.stringify({name: name}))
+            if (groupStatus === 409) {
+                console.log(`Group with that name already exists (status code ${groupStatus})`)
+                this.$s.groups.pop()
+            }
         },
-        updateGroup(group) {
+        async updateGroup(group) {
             for (const i in this.$s.groups) {
-                if (this.$s.groups[i].id == group.id) {
-                    this.$s.groups[i] = group
+                if (this.$s.groups[i].id === group.id) {
+                    if (this.$s.groups[i].name !== group.name) {
+                        let oldName = this.$s.groups[i].name;
+                        this.$s.groups[i].name = group.name
+                        const [groupData, groupStatus] = await this.safeApi('PATCH', `/groups/${group.id}`, JSON.stringify({name: group.name}))
+                        if (groupStatus === 409) {
+                            console.log(`Group with that name already exists (status code ${groupStatus})`)
+                            this.$s.groups[i].name = oldName
+                        }
+                    }
                     break
                 }
             }
@@ -24,19 +37,12 @@ export default {
             const [groupsData, groupsStatus] = await this.safeApi('GET', `/groups`)
             this.$s.groups = groupsData
 
-            const [envsData, envsStatus] = await this.safeApi('GET', `/environments`)
-            this.$s.envs = envsData
-
             const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
-            if (gameStatus != 200) {
-                console.log(`No active game! (status code ${gameStatus})`)
-            } else {
-                this.$s.game = gameData
-                const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
-                this.$s.game.widget = gameWidget.html
-                const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
-                this.$s.refPlayers = refPlayers
-            }
+            this.$s.game = gameData
+            const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
+            this.$s.game.widget = gameWidget.html
+            const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
+            this.$s.refPlayers = refPlayers
             const [gamesData, gamesStatus] = await this.safeApi('GET', `/games`)
             this.$s.games = gamesData
         },
@@ -47,10 +53,16 @@ export default {
                 const [userData, userStatus] = await this.safeApi('GET', '/students/me')
                 this.$s.studentNick = userData.nickname
             }
+            if (teamPatchStatus === 409) {
+                console.log(`Nickname already taken (status code ${teamPatchStatus})`)
+                const [userData, userStatus] = await this.safeApi('GET', '/students/me')
+                this.$s.studentNick = userData.nickname
+            }
         },
         async deleteAccount() {
             if (this.deleteAccountConfirm !== 'I want to delete my account') return
             this.willDeleteAccount = false;
+            await this.safeApi('DELETE', `/students/me`)
             this.logOut()
         },
     }
@@ -125,9 +137,7 @@ export default {
                 tr(v-for='(game,index) in $s.games' :key='game.id')
                     td {{ game.name }}
                     td
-                        .hcombo.mr-2
-                            button(v-if='game.id !== $s.game.id' @click="activateGame(game.id)") Activate
-                            button Reset
+                        button(@click="activateGame(game.id)") {{ game.id === $s.game.id ? 'Reset' : 'Activate' }}
 
                         .hcombo
                             router-link(:to="`/game-wizard?edit=${game.id}`")

@@ -129,7 +129,6 @@ Vue.mixin({
             } else {
                 this.$s.game = gameData
 
-                const [gameWidget, gameWidgetStatus] = await this.safeApi('GET', `/games/${gameData.id}/widget`)
                 this.$s.game.widget = `${apiUrl}/games/${gameData.id}/widget`
 
                 const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)

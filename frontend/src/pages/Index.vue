@@ -24,12 +24,10 @@ export default {
     beforeDestroy() {
         clearInterval(this.timer)
     },
-    computed: {
+    methods: {
         isLeader() {
             return this.$s.studentId === this.$s.teamLeaderId
-        }
-    },
-    methods: {
+        },
         deadlineCountdown() {
             const dt = datediff(now(), new Date('2020-12-03 21:44'))
             let res = ''
@@ -56,6 +54,10 @@ export default {
                 console.log(`Team name cannot be empty or have more than 50 characters (status code ${studentTeamStatus})`)
                 const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
                 this.$s.teamName = studentTeam.name
+            } else if (teamPatchStatus === 409) {
+                console.log(`Team with that name already exists (status code ${studentTeamStatus})`)
+                const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
+                this.$s.teamName = studentTeam.name
             }
         },
 
@@ -79,15 +81,35 @@ export default {
         },
 
         async inviteStudent() {
-            await this.safeApi('POST', `/teams/${this.$s.teamId}/invitations/${this.invitedStudent}`)
-            const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
-            if (teamInvitationsStatus === 403) {
-                console.log(`You are not the leader! (status code ${teamInvitationsStatus})`)
-            } else if (teamInvitationsStatus === 404) {
-                console.log(`No such student! (status code ${teamInvitationsStatus})`)
+            const [invitedStudent, invitedStudentStatus] = await this.safeApi('POST', `/teams/${this.$s.teamId}/invitations/${this.invitedStudent}`)
+            if (invitedStudentStatus === 403) {
+                console.log(`You are not the leader! (status code ${invitedStudentStatus})`)
+            } else if (invitedStudentStatus === 404) {
+                console.log(`No such student! (status code ${invitedStudentStatus})`)
+            } else if (invitedStudentStatus === 409) {
+                console.log(`Student already in team or invited! (status code ${invitedStudentStatus})`)
             } else {
+                const [studentTeamInvitations, studentTeamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
                 this.$s.teamInvitations = studentTeamInvitations
             }
+        },
+
+        async leaveTeam() {
+            await this.safeApi('POST', `/students/me/team/leave`)
+
+            const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
+            this.$s.teamId = studentTeam.id
+            this.$s.teamName = studentTeam.name
+            this.$s.teamLeaderId = studentTeam.leader_id
+
+            const [studentTeamMembers, teamMembersStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/members`)
+            this.$s.teamMembers = studentTeamMembers
+
+            const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
+            this.$s.teamInvitations = studentTeamInvitations
+
+            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
+            this.$s.teamSubmissions = teamSubmissions
         },
 
         submissionOnFileChanged(event) {
@@ -149,7 +171,7 @@ export default {
             h3 Team
 
             h4 Team Name
-                .hcombo(v-if='idLeader')
+                .hcombo(v-if='isLeader')
                     input(type='text' v-model='$s.teamName')
                     button(@click="changeTeamName") Save
                 div(v-else)
@@ -193,6 +215,9 @@ export default {
                 .hcombo
                     input(type='text' placeholder='Student nickname', v-model="invitedStudent")
                     button(@click="inviteStudent()") Send
+
+            h3 Team Actions
+            button(@click="leaveTeam") Leave team
 
         div(v-if='tab == "submit"')
             h3 New Submission
