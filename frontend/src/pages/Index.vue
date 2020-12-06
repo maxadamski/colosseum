@@ -24,10 +24,12 @@ export default {
     beforeDestroy() {
         clearInterval(this.timer)
     },
-    methods: {
+    computed: {
         isLeader() {
             return this.$s.studentId === this.$s.teamLeaderId
         },
+    },
+    methods: {
         updateCountdown() {
             if (this.$s.game.deadline === null) return
             const dt = datediff(now(), this.$s.game.deadline)
@@ -201,7 +203,13 @@ export default {
                     td(v-if="isLeader")
                         button(@click="safeApi('DELETE', `/students/${$s.teamId}/invitations/${invited.id}`); $delete($s.teamInvitations, index)") Cancel Invite
 
-            h3 Invitations
+            template(v-if='isleader')
+                h4 Invite Member
+                .hcombo
+                    input(type='text' placeholder='Student nickname', v-model="invitedStudent")
+                    button(@click="inviteStudent()") Send
+
+            h3 Invitation Inbox
             .hflex.hlist-3.fy-center(v-if="$s.studentInvitations.length")
                 div(v-for="(invitation, index) in $s.studentInvitations" :key="invitation.id")
                     b {{ invitation.leader }}
@@ -211,11 +219,6 @@ export default {
                         button(@click="acceptTeamInvitation(invitation.id, index)") Accept
                         button(@click="safeApi('POST', `/students/me/invitations/${invitation.id}/decline`); $delete($s.studentInvitations, index)") Delete
             p(v-else) There are no invitations 
-
-            h4(v-if="isLeader") Invite Member
-            .hcombo
-                input(type='text' placeholder='Student nickname', v-model="invitedStudent")
-                button(@click="inviteStudent()") Send
 
             h3 Team Actions
             button(@click="leaveTeam") Leave team
