@@ -3,10 +3,19 @@ while [ $# -ge 1 ]; do case "$1" in
   --name=*) NAME="${1#*=}";;
   --path=*) config="${1#*=}/config";; # …/name
   --rootfs=*) rootfs="${1#*=}";; # …/rootfs
+  --colosseum) colosseum="$2"; shift;;
+  --player) player="$2"; shift;;
   --mapped-uid) if [ $# -ge 2 ]; then LXCUID="$2"; shift; fi;;
   --mapped-gid) if [ $# -ge 2 ]; then LXCGRP="$2"; shift; fi;;
   *) echo >&2 "unknown options: '$*'"; exit 2;;
 esac; shift; done
+if [ $colosseum ]; then
+    share="$colosseum/lxc_share"
+    rootfs="$colosseum/containers/$NAME"
+    mkdir "$rootfs"
+else
+    share="/bin"
+fi
 baseconfig=/etc/lxc/default.conf; userconfig=~/.config/lxc/default.conf; if [ "${LXCUID-}" -a -f "$userconfig" ]; then baseconfig="$userconfig"; fi
 cat <<EOF >"$config"
 # $baseconfig
@@ -23,22 +32,23 @@ lxc.mount.entry = /bin bin none ro,bind 0 0
 lxc.mount.entry = /lib lib none ro,bind 0 0
 lxc.mount.entry = /sbin sbin none ro,bind 0 0
 lxc.mount.entry = /usr usr none ro,bind 0 0
+lxc.mount.entry = $share util none ro,bind 0 0
 lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed
 EOF
-DISTRO=`lsb_release --id --short` && DISTRO="${DISTRO,,}"
-COMMON="/usr/share/lxc/config/$DISTRO.common.conf" && if [ -f "$COMMON" ]; then cat <<EOF >>"$config"
-lxc.include = $COMMON
-EOF
-fi
 if [ "$(uname --machine)" = x86_64 ]; then cat <<EOF >>"$config"
 lxc.mount.entry = /lib64 lib64 none ro,bind 0 0
 lxc.arch = x86_64
 EOF
 fi
-DIRS=(); for D in bin dev etc home lib lib64 proc root sbin sys tmp usr var; do DIRS+=("$rootfs/$D"); done
+DIRS=(); for D in bin dev etc home lib lib64 proc root sbin sys tmp usr var util; do DIRS+=("$rootfs/$D"); done
 mkdir --parents "${DIRS[@]}"
 touch "$rootfs/etc/fstab"
 mkfifo -m 666 "$rootfs/fifo_in" "$rootfs/fifo_out"
+if [ $player ]; then
+    filename=$(basename -- "$player")
+    cp "$player" "$rootfs/root/$filename"
+fi
+
 ln --symbolic "$rootfs/run" "$rootfs/var/run"
 cat <<EOF >"$rootfs/etc/passwd"
 root:x:0:0:root:/root:/bin/bash
