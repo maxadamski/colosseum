@@ -1,0 +1,5 @@
+user = "colosseumdb_admin"
+password = "pwd"
+host = "localhost"
+port = 5432
+name = "colosseumdb"
