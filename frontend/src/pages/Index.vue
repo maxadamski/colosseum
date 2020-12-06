@@ -203,7 +203,7 @@ export default {
                     td(v-if="isLeader")
                         button(@click="safeApi('DELETE', `/students/${$s.teamId}/invitations/${invited.id}`); $delete($s.teamInvitations, index)") Cancel Invite
 
-            template(v-if='isleader')
+            template(v-if='isLeader')
                 h4 Invite Member
                 .hcombo
                     input(type='text' placeholder='Student nickname', v-model="invitedStudent")
@@ -221,7 +221,10 @@ export default {
             p(v-else) There are no invitations 
 
             h3 Team Actions
-            button(@click="leaveTeam") Leave team
+            div.mb-2(v-if='isLeader')
+                small(v-if='$s.teamMembers.length > 1') You must set someone as a leader before leaving a team.
+                small(v-else) You cannot leave a team where you are the sole member.
+            button(@click="leaveTeam" :disabled='isLeader') Leave team
 
         div(v-if='tab == "submit"')
             h3 New Submission
