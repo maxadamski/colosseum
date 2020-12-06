@@ -39,21 +39,17 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
     return
 
 @app.put('/player/{id}')
-async def new_player(id: int, env_id: int, data: bytes = File(...), automake: bool = True):
-    rootfs = f'{lxc_dir}/{id}'
-    os.mkdir(rootfs)
+async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
     c = lxc.Container(str(id))
-    c.create('player', 0, {f'--rootfs={rootfs}'})
-
-    f = open(f'{rootfs}/root/player_archive', 'wb')
-    f.write(data)
+    player = f'/tmp/{data.filename}'
+    f = open(player, 'wb')
+    f.write(data.file.read())
     f.close()
 
-    make_player = f'{rootfs}/make_player'
-    shutil.copyfile('make_player', make_player)
-    os.chmod(make_player, stat.S_IXGRP)
-    
-    c.start(useinit=True, daemonize=False, cmd=('/make_player', str(automake)))
+    cwd = os.getcwd()
+    c.create('player', 0, {'colosseum':cwd, 'player':player})
+
+    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(automake)))
     #c.start(useinit=True, daemonize=False, cmd=('bash',))
     return
 
