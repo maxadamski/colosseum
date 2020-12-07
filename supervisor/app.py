@@ -32,14 +32,20 @@ async def api_token(api_token: str):
 
 @app.get('/job/{id}')
 async def get_job(id: int):
+    # TODO: get results of job from RAM/redis
     return dict(status='?', description='?')
 
 @app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
+    # TODO: make FIFOs, run judge, and p1, p2 in containers
+    # TODO: store results in RAM/redis
     return
 
 @app.put('/player/{id}')
 async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
+    # TODO: store player files, compile if needed
+    
+    # FIXME: containers should be in new_job
     c = lxc.Container(str(id))
     player = f'/tmp/{data.filename}'
     f = open(player, 'wb')
@@ -55,5 +61,6 @@ async def new_player(id: int, env_id: int, data: UploadFile = File(...), automak
 
 @app.put('/game/{id}')
 async def new_game(id: int, env_id: int, data: bytes = File(...), automake: bool = True):
+    # TODO: store judge files, compile if needed
     return
 
