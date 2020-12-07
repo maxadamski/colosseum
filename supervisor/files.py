@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 import zipfile
 import shutil
+import subprocess
 
 FILES_DIR = os.path.join(os.getcwd(), 'files')
 GAMES_DIR = os.path.join(FILES_DIR, 'games')
@@ -44,7 +45,7 @@ def get_submission_directory(submission_id, init=False):
     return submission_dir
 
 
-def save_and_unzip_files(executable_dir, file, name):
+def save_and_unzip_files(executable_dir, file, name=None):
     ext = os.path.splitext(file.filename)[1]
     file_path = os.path.join(executable_dir, name + ext)
     with open(file_path, 'wb+') as f:
@@ -52,3 +53,15 @@ def save_and_unzip_files(executable_dir, file, name):
         f.close()
     if ext == '.zip':
         unpack_temp_zip_file(file_path, executable_dir)
+
+
+def compile_files(dir_path, file, env_id):
+    if env_id == 0:
+        cmd = "gcc {}".format(file)
+    elif env_id == 1:
+        cmd = "c++ {}".format(file)
+    elif env_id == 2:
+        return 0
+    else:
+        return -1
+    return subprocess.call(cmd, shell=True, cwd=dir_path)

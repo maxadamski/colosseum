@@ -51,8 +51,14 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
 async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
     submission_dir = get_submission_directory(id, init=True)
     clear_dir_contents(submission_dir)
-    save_and_unzip_files(submission_dir, data, 'player')
-    # TODO: compile if needed
+    name = 'player'
+    save_and_unzip_files(submission_dir, data, name)
+    if automake:
+        cmd = "make compile"
+        result = subprocess.call(cmd, shell=True, cwd=submission_dir)
+    else:
+        result = compile_files(submission_dir, name + os.path.splitext(data.filename)[1], env_id)
+    # TODO: React according to the returned value
 
     # FIXME: containers should be in new_job
     c = lxc.Container(str(id))
@@ -73,8 +79,11 @@ async def new_player(id: int, env_id: int, data: UploadFile = File(...), automak
 async def new_ref_player(id: int, game_id: int, env_id: int, data: UploadFile = File(...)):
     submission_dir = get_game_submission_directory(game_id, id, init=True)
     clear_dir_contents(submission_dir)
-    save_and_unzip_files(submission_dir, data, 'player')
-    # TODO: compile if needed
+    save_and_unzip_files(submission_dir, data)
+
+    cmd = "make compile"
+    compile_result = subprocess.call(cmd, shell=True, cwd=submission_dir)
+    # TODO: React according to the returned value
 
     return
 
@@ -83,7 +92,10 @@ async def new_ref_player(id: int, game_id: int, env_id: int, data: UploadFile = 
 async def new_game(id: int, env_id: int, data: UploadFile = File(...)):
     game_dir, game_files_dir = get_game_directories(id, init=True)
     clear_dir_contents(game_files_dir)
-    save_and_unzip_files(game_files_dir, data, 'judge')
-    # TODO: compile if needed
+    save_and_unzip_files(game_files_dir, data)
+
+    cmd = "make compile"
+    compile_result = subprocess.call(cmd, shell=True, cwd=game_files_dir)
+    # TODO: React according to the returned value
 
     return
