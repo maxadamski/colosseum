@@ -4,4 +4,4 @@ toml
 redis
 passlib
 python-multipart
-python3-lxc
+git+https://github.com/lxc/python3-lxc.git
