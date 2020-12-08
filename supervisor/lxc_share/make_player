@@ -1,2 +1,64 @@
-#!/bin/sh
-echo SUCCESS
+#!/usr/bin/bash
+if [ $# -ne 2 ]; then
+    echo <<EOF
+Usage: make_player env_id automake
+ - env_id: execution environment identifier
+ - automake: True or False
+example: make_player 1 True
+EOF
+    exit
+fi
+
+env_id=$1
+automake=$2
+
+cd /root
+num_files=$(ls | wc -l)
+if ! [ $num_files -eq 1 ]; then
+    if [ $num_files -gt 1 ]; then
+        echo >&2 "Error: more than one file in /root/"
+    else
+        echo >&2 "Error: player file not found in /root/"
+    fi
+    exit 1
+fi
+file=$(ls)
+
+if 7z t $file >/dev/null 2>&1; then
+    if ! 7z e $file >/dev/null 2>&1; then
+      echo >&2 "Error: failure to extract files from '$file'"
+      exit 1
+    fi
+fi
+
+if [ $automake = True ]; then
+    case $env_id in
+      0) # C
+          ;;
+      1) # C++
+          ;;
+      2) # python
+          ;;
+      *)
+          echo >&2 "Error: unknown env_id: '$env_id'"
+          exit 1
+          ;;
+    esac
+    exit
+fi
+
+# no automake
+if [ -f build ]; then
+    chmod +x build
+    if ! ./build; then
+        echo >&2 "Error: running 'build' returned an error"
+        exit 1
+    fi
+fi
+if [ -f run ]; then
+    chmod +x run
+    ln -s /root/run /player
+else
+    echo >&2 "Error: can't find 'run' (automake False)"
+    exit 1
+fi

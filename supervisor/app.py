@@ -14,10 +14,6 @@ from files import *
 
 config = toml.load('config.toml')
 
-lxc_dir = config['lxc_dir']
-if not os.path.isdir(lxc_dir):
-    os.mkdir(lxc_dir)
-
 app = FastAPI()
 
 if config['force_https']:
@@ -49,18 +45,6 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
 
 @app.put('/player/{id}')
 async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
-    submission_dir = get_submission_directory(id, init=True)
-    clear_dir_contents(submission_dir)
-    name = 'player'
-    save_and_unzip_files(submission_dir, data, name)
-    if automake:
-        cmd = "make compile"
-        result = subprocess.call(cmd, shell=True, cwd=submission_dir)
-    else:
-        result = compile_files(submission_dir, name + os.path.splitext(data.filename)[1], env_id)
-    # TODO: React according to the returned value
-
-    # FIXME: containers should be in new_job
     c = lxc.Container(str(id))
     player = f'/tmp/{data.filename}'
     f = open(player, 'wb')
@@ -70,7 +54,7 @@ async def new_player(id: int, env_id: int, data: UploadFile = File(...), automak
     cwd = os.getcwd()
     c.create('player', 0, {'colosseum': cwd, 'player': player})
 
-    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(automake)))
+    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(env_id), str(automake)))
     # c.start(useinit=True, daemonize=False, cmd=('bash',))
     return
 
