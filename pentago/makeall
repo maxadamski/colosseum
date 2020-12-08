@@ -1,0 +1,5 @@
+#!/bin/sh
+for d in judge player_greedy player_random; do
+	cd "$d" && make
+	cd ..
+done
