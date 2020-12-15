@@ -9,6 +9,8 @@ from passlib.hash import sha256_crypt
 
 import lxc
 import os, stat, shutil
+from tempfile import NamedTemporaryFile
+import asyncio as aio
 
 from files import *
 
@@ -38,24 +40,47 @@ async def get_job(id: int):
 
 @app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
-    # TODO: make FIFOs, run judge, and p1, p2 in containers
+    p1 = lxc.Container(str(p1_id))
+    p2 = lxc.Container(str(p2_id))
+    p1.start(useinit=True, cmd=('/player', '/fifo_in', '/fifo_out'))
+    p2.start(useinit=True, cmd=('/player', '/fifo_in', '/fifo_out'))
+
+    p1_dir = os.path.join(os.getcwd(), 'containers', str(p1_id))
+    p2_dir = os.path.join(os.getcwd(), 'containers', str(p2_id))
+    p1_in = os.path.join(p1_dir, 'fifo_in')
+    p2_in = os.path.join(p2_dir, 'fifo_in')
+    p1_out = os.path.join(p1_dir, 'fifo_out')
+    p2_out = os.path.join(p2_dir, 'fifo_out')
+    _, judge_dir = get_game_directories(game_id)
+
+    judge = os.path.join(judgedir, 'judge')
+    board_size = 6
+    timeout = 30
+    cmd = ' '.join((judge, p1_in, p1_out, p2_in, p2_out, board_size, timeout))
+    process = aio.create_subprocess_shell(cmd, stdout=aio.subprocess.FIFO, limit=0x100000)
+
+    # TODO(piotr): maybe put in some safety timeout in case the judge deadlocks somehow?
+    out, _ = await process.communicate()
+
     # TODO: store results in RAM/redis
+    print('Judge returned: ', out)
+
     return
 
 
 @app.put('/player/{id}')
 async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
     c = lxc.Container(str(id))
-    player = f'/tmp/{data.filename}'
-    f = open(player, 'wb')
+    _, extension = os.path.splitext(data.filename)
+    f = NamedTemporaryFile(suffix = extension)
     f.write(data.file.read())
     f.close()
 
     cwd = os.getcwd()
-    c.create('player', 0, {'colosseum': cwd, 'player': player})
+    c.create('player', 0, {'colosseum': cwd, 'player': f.name})
 
-    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(env_id), str(automake)))
-    # c.start(useinit=True, daemonize=False, cmd=('bash',))
+    c.start(useinit=True, daemonize=True, cmd=('/util/make_player', str(env_id), str(automake)))
+    # TODO(piotr): react based on the output of cmd
     return
 
 
