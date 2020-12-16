@@ -47,7 +47,7 @@ def get_submission_directory(submission_id, init=False):
 
 def save_and_unzip_files(executable_dir, file, name=None):
     ext = os.path.splitext(file.filename)[1]
-    file_path = os.path.join(executable_dir, name + ext)
+    file_path = os.path.join(executable_dir, str(name) + ext)
     with open(file_path, 'wb+') as f:
         f.write(file.file.read())
         f.close()

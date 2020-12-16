@@ -53,11 +53,12 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
     p2_out = os.path.join(p2_dir, 'fifo_out')
     _, judge_dir = get_game_directories(game_id)
 
-    judge = os.path.join(judgedir, 'judge')
-    board_size = 6
-    timeout = 30
+    judge = os.path.join(judge_dir, 'judge')
+    board_size = '6'
+    timeout = '30'
     cmd = ' '.join((judge, p1_in, p1_out, p2_in, p2_out, board_size, timeout))
-    process = aio.create_subprocess_shell(cmd, stdout=aio.subprocess.FIFO, limit=0x100000)
+    process = await aio.create_subprocess_shell(
+            cmd, stdout=aio.subprocess.PIPE, limit=0x100000)
 
     # TODO(piotr): maybe put in some safety timeout in case the judge deadlocks somehow?
     out, _ = await process.communicate()
@@ -72,7 +73,7 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
 async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
     c = lxc.Container(str(id))
     _, extension = os.path.splitext(data.filename)
-    f = NamedTemporaryFile(suffix = extension)
+    f = NamedTemporaryFile(suffix = extension, delete=False)
     f.write(data.file.read())
     f.close()
 
