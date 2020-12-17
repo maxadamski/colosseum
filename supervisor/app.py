@@ -70,42 +70,42 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
 
 
 @app.put('/player/{id}')
-async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
+async def new_player(id: int, env_id: int = Body(...), data: UploadFile = File(...), automake: bool = Body(True)):
     c = lxc.Container(str(id))
-    _, extension = os.path.splitext(data.filename)
-    f = NamedTemporaryFile(suffix = extension, delete=False)
-    f.write(data.file.read())
-    f.close()
+
+    submission_dir = get_submission_directory(id, init=True)
+    clear_dir_contents(submission_dir)
+    save_and_unzip_files(submission_dir, data, "player")
 
     cwd = os.getcwd()
-    c.create('player', 0, {'colosseum': cwd, 'player': f.name})
+    c.create('player', 0, {'colosseum': cwd, 'player': submission_dir})
 
     c.start(useinit=True, daemonize=True, cmd=('/util/make_player', str(env_id), str(automake)))
     # TODO(piotr): react based on the output of cmd
-    return
+    return "Dummy player response"
 
 
 @app.put('/ref_player/{id}')
-async def new_ref_player(id: int, game_id: int, env_id: int, data: UploadFile = File(...)):
+async def new_ref_player(id: int, game_id: int = Body(...), env_id: int = Body(...), data: UploadFile = File(...)):
     submission_dir = get_game_submission_directory(game_id, id, init=True)
     clear_dir_contents(submission_dir)
-    save_and_unzip_files(submission_dir, data)
+    save_and_unzip_files(submission_dir, data, "player")
 
     cmd = "make compile"
     compile_result = subprocess.call(cmd, shell=True, cwd=submission_dir)
     # TODO: React according to the returned value
 
-    return
+    return "Dummy ref_player response"
 
 
 @app.put('/game/{id}')
-async def new_game(id: int, env_id: int, data: UploadFile = File(...)):
+async def new_game(id: int, env_id: int = Body(...), data: UploadFile = File(...)):
     game_dir, game_files_dir = get_game_directories(id, init=True)
     clear_dir_contents(game_files_dir)
-    save_and_unzip_files(game_files_dir, data)
+    save_and_unzip_files(game_files_dir, data, "judge")
 
     cmd = "make compile"
     compile_result = subprocess.call(cmd, shell=True, cwd=game_files_dir)
     # TODO: React according to the returned value
 
-    return
+    return "Dummy game response"
