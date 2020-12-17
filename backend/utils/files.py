@@ -50,12 +50,11 @@ def remove_dir(directory):
     shutil.rmtree(directory, ignore_errors=True)
 
 
-def get_game_directories(game_id, init=False):
+def get_game_directory(game_id, init=False):
     game_dir = os.path.join(GAMES_DIR, str(game_id))
-    game_files_dir = os.path.join(game_dir, 'judge')
     if init:
-        Path(game_files_dir).mkdir(parents=True, exist_ok=True)
-    return game_dir, game_files_dir
+        Path(game_dir).mkdir(parents=True, exist_ok=True)
+    return game_dir
 
 
 def get_game_submission_directory(game_id, submission_id, init=False):
