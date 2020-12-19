@@ -1,4 +1,4 @@
-#!/bin/bash -eu
+#!/bin/bash
 while [ $# -ge 1 ]; do case "$1" in
   --name=*) NAME="${1#*=}";;
   --path=*) config="${1#*=}/config";; # …/name
@@ -16,11 +16,13 @@ if [ $colosseum ]; then
 else
     share="/bin"
 fi
-baseconfig=/etc/lxc/default.conf; userconfig=~/.config/lxc/default.conf; if [ "${LXCUID-}" -a -f "$userconfig" ]; then baseconfig="$userconfig"; fi
+
+baseconfig=~/.config/lxc/default.conf
 cat <<EOF >"$config"
 # $baseconfig
 EOF
 cat "$baseconfig" >>"$config"
+
 cat <<EOF >>"$config"
 # lxc-player
 lxc.rootfs.path = $rootfs
@@ -35,12 +37,7 @@ lxc.mount.entry = /usr usr none ro,bind 0 0
 lxc.mount.entry = $share util none ro,bind 0 0
 lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed
 EOF
-if [ "$(uname --machine)" = x86_64 ]; then cat <<EOF >>"$config"
-lxc.mount.entry = /lib64 lib64 none ro,bind 0 0
-lxc.arch = x86_64
-EOF
-fi
-DIRS=(); for D in bin dev etc home lib lib64 proc root sbin sys tmp usr var util; do DIRS+=("$rootfs/$D"); done
+DIRS=(); for D in bin dev etc home lib proc root sbin sys tmp usr var util; do DIRS+=("$rootfs/$D"); done
 mkdir --parents "${DIRS[@]}"
 touch "$rootfs/etc/fstab"
 mkfifo -m 666 "$rootfs/fifo_in" "$rootfs/fifo_out"
