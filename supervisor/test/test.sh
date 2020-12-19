@@ -22,5 +22,5 @@ EOF
 
 popd
 
-curl -X PUT "http://localhost:8000/player/1?env_id=2&automake=false" -F data=@/tmp/colsuptest/player.7z
+curl -X PUT "http://localhost:8001/player/1" -F env_id=2 -F automake=false -F data=@/tmp/colsuptest/player.7z
 echo

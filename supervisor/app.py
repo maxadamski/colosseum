@@ -60,29 +60,43 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
     process = await aio.create_subprocess_shell(
             cmd, stdout=aio.subprocess.PIPE, limit=0x100000)
 
-    # TODO(piotr): maybe put in some safety timeout in case the judge deadlocks somehow?
-    out, _ = await process.communicate()
+    try:
+        out = await aio.wait_for(process.stdout.read(), 60)
+    except aio.TimeoutError:
+        raise HTTPException(422, 'Judge timeout')
 
     # TODO: store results in RAM/redis
-    print('Judge returned: ', out)
 
-    return
+    return out
 
 
 @app.put('/player/{id}')
 async def new_player(id: int, env_id: int = Body(...), data: UploadFile = File(...), automake: bool = Body(True)):
     c = lxc.Container(str(id))
 
-    submission_dir = get_submission_directory(id, init=True)
-    clear_dir_contents(submission_dir)
-    save_and_unzip_files(submission_dir, data, "player")
-
+    _, extension = os.path.splitext(data.filename)
+    # temp_f will be deleted by lxc template when it's done
+    temp_f = NamedTemporaryFile(suffix = extension, delete=False)
+    temp_f.write(data.file.read())
+    temp_f.close()
     cwd = os.getcwd()
-    c.create('player', 0, {'colosseum': cwd, 'player': submission_dir})
+    c.create('player', 0, {'colosseum': cwd, 'player': temp_f.name})
 
-    c.start(useinit=True, daemonize=True, cmd=('/util/make_player', str(env_id), str(automake)))
-    # TODO(piotr): react based on the output of cmd
-    return "Dummy player response"
+    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(env_id), str(automake)))
+    while c.state == 'RUNNING':
+        await aio.sleep(.01)
+
+    rootfs = c.get_config_item('lxc.rootfs.path')
+    cmd_out_path = os.path.join(rootfs, 'make_player.log')
+    if not os.path.isfile(cmd_out_path):
+        raise HTTPException(500, 'Player compilation failed with no output')
+    with open(cmd_out_path, 'r') as cmd_out_file:
+        cmd_out = cmd_out_file.read()
+
+    if cmd_out != 'OK\n':
+        raise HTTPException(422, f'Player compilation failed with "{cmd_out}"')
+
+    return 'OK' # TODO(piotr): should we send something more in response?
 
 
 @app.put('/ref_player/{id}')
