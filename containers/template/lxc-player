@@ -12,7 +12,7 @@ esac; shift; done
 if [ $colosseum ]; then
     share="$colosseum/lxc_share"
     rootfs="$colosseum/containers/$NAME"
-    mkdir "$rootfs"
+    mkdir -p "$rootfs"
 else
     share="/bin"
 fi
@@ -47,6 +47,7 @@ mkfifo -m 666 "$rootfs/fifo_in" "$rootfs/fifo_out"
 if [ $player ]; then
     filename=$(basename -- "$player")
     cp "$player" "$rootfs/root/$filename"
+    rm "$player"
 fi
 
 ln --symbolic "$rootfs/run" "$rootfs/var/run"
