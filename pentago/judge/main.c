@@ -74,10 +74,10 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
             case MSG_COMMIT_MOVE: {
                 u8 i, j, rotation;
                 mscanf(buffer, "%u %u %u", &i, &j, &rotation);
-                printf("Player %c: (%u, %u) %u\n", game->current_player, i, j, rotation);
+                eprintf("Player %c: (%u, %u) %u\n", game->current_player, i, j, rotation);
                 PentagoError err = make_move(game, i, j, rotation);
                 if (err) {
-                    printf("MSG_COMMIT_MOVE error %d\n", err);
+                    eprintf("MSG_COMMIT_MOVE error %d\n", err);
                     return PLAYER_ILLEGAL;
                 }
                 done = true;
@@ -105,15 +105,15 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
 
             case MSG_UNDO_MOVE: {
                 if (arrlen(p->stack) == 0) {
-                    puts("MSG_UNDO_MOVE error: no move to undo");
+                    eprintf("MSG_UNDO_MOVE error: no move to undo");
                     return PLAYER_ILLEGAL;
                 }
                 PentagoMove move = arrpop(p->stack);
                 PentagoError err;
                 err = undo_move(&p->game, move.i, move.j, move.rotation);
                 if (err) {
-                    printf("undoing move (%u, %u) %u\n", move.i, move.j, move.rotation);
-                    printf("ERR %d\n", err);
+                    eprintf("undoing move (%u, %u) %u\n", move.i, move.j, move.rotation);
+                    eprintf("ERR %d\n", err);
                     return PLAYER_ILLEGAL;
                 }
             } break;
@@ -125,7 +125,7 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
             case MSG_GET_BOARD: {
                 i32 res = msendf(in, MSG_GET_BOARD, "%u[%,%]", p->game.board,
                         p->game.board_size, p->game.board_size);
-                //printf("sending board, sent %d bytes\n", res);
+                //eprintf("sending board, sent %d bytes\n", res);
             } break;
 
             case MSG_GET_PLAYER: {
@@ -139,7 +139,7 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
 
 int main(int argc, char **argv) {
     if (argc != 7) {
-        puts("usage: player/1/in player/1/out player/2/in player/2/out board_size timeout");
+        eprintf("usage: player/1/in player/1/out player/2/in player/2/out board_size timeout\n");
         return 1;
     }
     int p1_in  = open(argv[1], O_WRONLY);
@@ -148,7 +148,7 @@ int main(int argc, char **argv) {
     int p2_out = open(argv[4], O_RDONLY);
     u8 board_size = atoi(argv[5]);
     f32 timeout = atof(argv[6]);
-    printf("board_size: %d\ntimeout: %f\n", (i32)board_size, timeout);
+    eprintf("board_size: %d\ntimeout: %f\n", (i32)board_size, timeout);
 
     // TODO(piotr): check the arguments
 
@@ -172,17 +172,17 @@ int main(int argc, char **argv) {
         res = handle_player(&p1, &game, timeout);
         board_print(&game);
         if (res) {
-            puts("PLAYER 1 ILLEGAL");
+            printf("ILLEGAL 1\n");
             break;
         }
         if (game.winner) break;
         res = handle_player(&p2, &game, timeout);
         board_print(&game);
         if (res) {
-            puts("PLAYER 2 ILLEGAL");
+            printf("ILLEGAL 2\n");
             break;
         }
     }
     // TODO(piotr): print result correctly
-    printf("Winner: %c\n", game.winner);
+    printf("WINNER %c\n", game.winner);
 }

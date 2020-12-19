@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#define eprintf(fmt, args...) do { fprintf(stderr, fmt, ##args); } while (0)
+
 typedef enum {
     PERR_OK = 0,
     PERR_BAD_ARGUMENT = 1,

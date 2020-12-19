@@ -224,9 +224,9 @@ char get_winner(Pentago *game) {
 void board_print(Pentago *game) {
     for (uint8_t i = 0; i < game->board_size; i++) {
         for (uint8_t j = 0; j < game->board_size; j++) {
-            putchar(*board_get(game, i, j));
+            putc(*board_get(game, i, j), stderr);
         }
-        putchar('\n');
+        putc('\n', stderr);
     }
 }
 
