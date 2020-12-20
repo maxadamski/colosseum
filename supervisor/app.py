@@ -9,14 +9,12 @@ from passlib.hash import sha256_crypt
 
 import lxc
 import os, stat, shutil
+from tempfile import NamedTemporaryFile
+import asyncio as aio
 
 from files import *
 
 config = toml.load('config.toml')
-
-lxc_dir = config['lxc_dir']
-if not os.path.isdir(lxc_dir):
-    os.mkdir(lxc_dir)
 
 app = FastAPI()
 
@@ -42,60 +40,86 @@ async def get_job(id: int):
 
 @app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
-    # TODO: make FIFOs, run judge, and p1, p2 in containers
+    p1 = lxc.Container(str(p1_id))
+    p2 = lxc.Container(str(p2_id))
+    p1.start(useinit=True, cmd=('/player', '/fifo_in', '/fifo_out'))
+    p2.start(useinit=True, cmd=('/player', '/fifo_in', '/fifo_out'))
+
+    p1_dir = os.path.join(os.getcwd(), 'containers', str(p1_id))
+    p2_dir = os.path.join(os.getcwd(), 'containers', str(p2_id))
+    p1_in = os.path.join(p1_dir, 'fifo_in')
+    p2_in = os.path.join(p2_dir, 'fifo_in')
+    p1_out = os.path.join(p1_dir, 'fifo_out')
+    p2_out = os.path.join(p2_dir, 'fifo_out')
+    _, judge_dir = get_game_directories(game_id)
+
+    judge = os.path.join(judge_dir, 'judge')
+    board_size = '6'
+    timeout = '30'
+    cmd = ' '.join((judge, p1_in, p1_out, p2_in, p2_out, board_size, timeout))
+    process = await aio.create_subprocess_shell(
+            cmd, stdout=aio.subprocess.PIPE, limit=0x100000)
+
+    try:
+        out = await aio.wait_for(process.stdout.read(), 60)
+    except aio.TimeoutError:
+        raise HTTPException(422, 'Judge timeout')
+
     # TODO: store results in RAM/redis
-    return
+
+    return out
 
 
 @app.put('/player/{id}')
-async def new_player(id: int, env_id: int, data: UploadFile = File(...), automake: bool = True):
-    submission_dir = get_submission_directory(id, init=True)
-    clear_dir_contents(submission_dir)
-    name = 'player'
-    save_and_unzip_files(submission_dir, data, name)
-    if automake:
-        cmd = "make compile"
-        result = subprocess.call(cmd, shell=True, cwd=submission_dir)
-    else:
-        result = compile_files(submission_dir, name + os.path.splitext(data.filename)[1], env_id)
-    # TODO: React according to the returned value
-
-    # FIXME: containers should be in new_job
+async def new_player(id: int, env_id: int = Body(...), data: UploadFile = File(...), automake: bool = Body(True)):
     c = lxc.Container(str(id))
-    player = f'/tmp/{data.filename}'
-    f = open(player, 'wb')
-    f.write(data.file.read())
-    f.close()
 
+    _, extension = os.path.splitext(data.filename)
+    # temp_f will be deleted by lxc template when it's done
+    temp_f = NamedTemporaryFile(suffix = extension, delete=False)
+    temp_f.write(data.file.read())
+    temp_f.close()
     cwd = os.getcwd()
-    c.create('player', 0, {'colosseum': cwd, 'player': player})
+    c.create('player', 0, {'colosseum': cwd, 'player': temp_f.name})
 
-    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(automake)))
-    # c.start(useinit=True, daemonize=False, cmd=('bash',))
-    return
+    c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(env_id), str(automake)))
+    while c.state == 'RUNNING':
+        await aio.sleep(.01)
+
+    rootfs = c.get_config_item('lxc.rootfs.path')
+    cmd_out_path = os.path.join(rootfs, 'make_player.log')
+    if not os.path.isfile(cmd_out_path):
+        raise HTTPException(500, 'Player compilation failed with no output')
+    with open(cmd_out_path, 'r') as cmd_out_file:
+        cmd_out = cmd_out_file.read()
+
+    if cmd_out != 'OK\n':
+        raise HTTPException(422, f'Player compilation failed with "{cmd_out}"')
+
+    return 'OK' # TODO(piotr): should we send something more in response?
 
 
 @app.put('/ref_player/{id}')
-async def new_ref_player(id: int, game_id: int, env_id: int, data: UploadFile = File(...)):
+async def new_ref_player(id: int, game_id: int = Body(...), env_id: int = Body(...), data: UploadFile = File(...)):
     submission_dir = get_game_submission_directory(game_id, id, init=True)
     clear_dir_contents(submission_dir)
-    save_and_unzip_files(submission_dir, data)
+    save_and_unzip_files(submission_dir, data, "player")
 
     cmd = "make compile"
     compile_result = subprocess.call(cmd, shell=True, cwd=submission_dir)
     # TODO: React according to the returned value
 
-    return
+    return "Dummy ref_player response"
 
 
 @app.put('/game/{id}')
-async def new_game(id: int, env_id: int, data: UploadFile = File(...)):
+async def new_game(id: int, env_id: int = Body(...), data: UploadFile = File(...)):
     game_dir, game_files_dir = get_game_directories(id, init=True)
     clear_dir_contents(game_files_dir)
-    save_and_unzip_files(game_files_dir, data)
+    save_and_unzip_files(game_files_dir, data, "judge")
 
     cmd = "make compile"
     compile_result = subprocess.call(cmd, shell=True, cwd=game_files_dir)
     # TODO: React according to the returned value
 
-    return
+    return "Dummy game response"
