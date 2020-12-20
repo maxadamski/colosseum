@@ -17,6 +17,15 @@ sudo ./install.sh
 If for some reason `install.sh` fails to configure the environment
 properly, here are the necessary steps.
 
+Check if the kernel has support for user namespaces with the following command:
+```bash
+zgrep CONFIG_USER_NS /proc/config.gz
+```
+The output should be:
+```
+CONFIG_USER_NS=y
+```
+
 Create `~/.config/lxc/default.conf` with the following contents:
 ```
 lxc.net.0.type = empty
@@ -35,7 +44,19 @@ sudo echo "your_user_name:100000:65536" >> /etc/subuid
 sudo echo "your_user_name:100000:65536" >> /etc/subgid
 ```
 
-Make sure the kernel supports user namespaces
+Next make sure both `newuidmap` and `newgidmap` have SUID set
+``` bash
+ls -l /bin/newuidmap /bin/newgidmap
+```
+
+If they don't, set it with:
+``` bash
+sudo chmod 4755 /bin/newuidmap /bin/newgidmap
+```
+
+**Note:** The remaining steps are only needed for some distributions (Debian, Arch Linux). 
+
+Check if user namespaces are enabled for unprivileged users.
 ``` bash
 sudo sysctl kernel.unprivileged_userns_clone
 ```
@@ -53,16 +74,6 @@ And make the change permanent with:
 sudo echo "kernel.unprivileged_userns_clone=1" >> /etc/sysctl.conf
 ```
 
-Next make sure both `newuidmap` and `newgidmap` have SUID set
-``` bash
-ls -l /bin/newuidmap /bin/newgidmap
-```
-
-If they don't, set it with:
-``` bash
-sudo chmod 4755 /bin/newuidmap /bin/newgidmap
-```
-
 ## Test
 After installation, to test if lxc is configured correctly, try the following:
 ``` bash
@@ -71,3 +82,17 @@ lxc-execute -n test -- bash
 ```
 This should run bash in the `test` container, if all went correctly `/bin` should be
 mounted read-only and `/fifo_in` and `/fifo_out` should exist.
+
+## Troubleshooting
+
+### `Could not access /home/user` when running `lxc-execute`
+
+This solution requires the `acl-progs` package.
+
+Solution: allow directory traversal for the inaccessible paths.
+```
+setfacl -m u:100000:x /home/user
+setfacl -m u:100000:x /home/user/.local
+setfacl -m u:100000:x /home/user/.local/share
+```
+

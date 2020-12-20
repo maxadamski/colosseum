@@ -5,6 +5,12 @@ if ! [ $SUDO_USER ]; then
 fi
 home=$(eval echo "~$SUDO_USER")
 
+config_user_ns=$(zgrep CONFIG_USER_NS /proc/config.gz | cut -d= -f2)
+if ! [[ "$config_user_ns" == "y" ]]; then
+	echo "Your kernel was not compiled with user namespace support"
+	exit 1
+fi
+
 if ! [ -d "$home/.config/lxc" ]; then
     echo "Making $home/.config/lxc"
     mkdir "$home/.config/lxc"
