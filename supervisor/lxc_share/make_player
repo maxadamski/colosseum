@@ -1,0 +1,97 @@
+#!/usr/bin/bash
+if [ $# -ne 2 ]; then
+    echo <<EOF
+Usage: make_player env_id automake
+ - env_id: execution environment identifier
+ - automake: True or False
+example: make_player 1 True
+EOF
+    exit
+fi
+
+# lxc doesn't export the PATH to our child processes
+export PATH
+
+env_id=$1
+automake=$2
+
+out=/make_player.log
+touch $out
+chmod 666 $out
+
+cd /root
+num_files=$(ls | wc -l)
+if ! [ $num_files -eq 1 ]; then
+    if [ $num_files -gt 1 ]; then
+        echo >$out "Error: more than one file in /root/"
+    else
+        echo >$out "Error: player file not found in /root/"
+    fi
+    exit 1
+fi
+file=$(ls)
+
+is_archive=false
+if 7z t $file >/dev/null 2>&1; then
+    is_archive=true
+    if ! 7z e $file >/dev/null 2>&1; then
+      echo >$out "Error: failure to extract files from '$file'"
+      exit 1
+    fi
+fi
+
+if [ $automake = True ]; then
+    case $env_id in
+      0) # C
+          echo >$out "Error: env_id '$env_id' not implemented"
+          exit 1
+          ;;
+      1) # C++
+          echo >$out "Error: env_id '$env_id' not implemented"
+          exit 1
+          ;;
+      2) # python
+          echo >$out "Error: env_id '$env_id' not implemented"
+          exit 1
+          ;;
+      *)
+          echo >$out "Error: unknown env_id '$env_id'"
+          exit 1
+          ;;
+    esac
+    echo >$out "OK"
+    exit
+fi
+
+# no automake
+if ! [ -f build ]; then
+    echo >$out "Error: 'build' file not found (automake off)"
+    if [ "$is_archive" = false ]; then
+        echo >$out "Warning: uploaded file is not recognized as an archive"
+    fi
+    exit 1
+fi
+
+chmod +x build
+
+if ! ./build 2>/tmp/build.log; then
+    echo >$out "Error: running 'build' returned an error"
+    echo >$out "Build logs: $(cat /tmp/build.log)"
+    exit 1
+fi
+
+if [ -f run ]; then
+    chmod +x run
+    cat >/player <<EOF
+#!/bin/sh
+export PATH
+cd root
+./run \$1 \$2 >/run.log 2>&1
+EOF
+    chmod +x /player
+    echo >$out "OK"
+    exit
+else
+    echo >$out "Error: can't find 'run' (automake off)"
+    exit 1
+fi
