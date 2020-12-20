@@ -5,8 +5,8 @@ if ! [ $SUDO_USER ]; then
 fi
 home=$(eval echo "~$SUDO_USER")
 
-config_user_ns=$(zgrep CONFIG_USER_NS /proc/config.gz | cut -d= -f2)
-if ! [[ "$config_user_ns" == "y" ]]; then
+user_ns=$(grep CONFIG_USER_NS= "/boot/config-$(uname -r)" | cut -d= -f2)
+if ! [[ "$user_ns" == "y" ]]; then
 	echo "Your kernel was not compiled with user namespace support"
 	exit 1
 fi
@@ -14,8 +14,7 @@ fi
 if ! [ -d "$home/.config/lxc" ]; then
     echo "Making $home/.config/lxc"
     mkdir "$home/.config/lxc"
-    chown $SUDO_USER "$home/.config/lxc"
-    chgrp $SUDO_USER "$home/.config/lxc"
+    chown $SUDO_USER:$SUDO_USER "$home/.config/lxc"
 fi
 
 echo "Making $home/.config/lxc/default.conf"
@@ -24,13 +23,11 @@ lxc.net.0.type = empty
 lxc.idmap = u 0 100000 65536
 lxc.idmap = g 0 100000 65536
 EOF
-chown $SUDO_USER "$home/.config/lxc/default.conf"
-chgrp $SUDO_USER "$home/.config/lxc/default.conf"
+chown $SUDO_USER:$SUDO_USER "$home/.config/lxc/default.conf"
 
 echo "Copying templates/lxc-player to /usr/share/lxc/templates/lxc-player"
 cp templates/lxc-player /usr/share/lxc/templates/lxc-player
-chown $SUDO_USER "/usr/share/lxc/templates/lxc-player"
-chgrp $SUDO_USER "/usr/share/lxc/templates/lxc-player"
+chown $SUDO_USER:$SUDO_USER "/usr/share/lxc/templates/lxc-player"
 
 if ! grep "$SUDO_USER:100000:65536" /etc/subuid >/dev/null; then
     echo "Allocating uid range"

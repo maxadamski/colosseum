@@ -19,7 +19,7 @@ properly, here are the necessary steps.
 
 Check if the kernel has support for user namespaces with the following command:
 ```bash
-zgrep CONFIG_USER_NS /proc/config.gz
+grep CONFIG_USER_NS= "/boot/config-$(uname -r)"
 ```
 The output should be:
 ```
