@@ -123,6 +123,14 @@ export default {
             submissionForm.append('executables', this.submissionFile)
             submissionForm.append('environment_id', this.submitEnv)
             submissionForm.append('is_automake', this.isAutomake)
+            this.$s.teamSubmissions.unshift({
+                date: "-",
+                env: "-",
+                status: "Submitting...",
+                score: "-",
+                id: -1,
+                primary: false
+            },)
             const [submissionPost, submissionPostStatus] = await this.safeApi('POST', `/teams/me/submissions`, submissionForm)
             if (submissionPostStatus === 415) {
                 console.log(`Bad extension! (status conde ${submissionPostStatus})`)
