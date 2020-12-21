@@ -1,3 +1,4 @@
+import requests
 from fastapi import FastAPI, Depends, Body, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -12,6 +13,8 @@ from utils.files import *
 from models import *
 
 from datetime import date
+
+import httpx
 
 app = FastAPI()
 
@@ -29,6 +32,7 @@ db_port = config['db']['port']
 db_host = config['db']['host']
 db_name = config['db']['name']
 servers = config['servers']
+supervisor_api = servers['alpha']['url']
 
 # compile database queries from directory
 db = pugsql.module('database/queries/')
@@ -249,8 +253,22 @@ async def create_student_team_submission(is_automake: bool = Body(...),
     submission_dir = get_submission_directory(submission_id, init=True)
 
     try:
-        save_executables(submission_dir, executables, 'player', submission_exec_ext)
+        save_file(submission_dir, executables, 'player', submission_exec_ext)
         db.update_team_submission_path(submission_id=submission_id, files_path=submission_dir)
+
+        files = {"data": (
+            executables.filename,
+            open('{}/player{}'.format(submission_dir, os.path.splitext(executables.filename)[1]), 'rb'))}
+        values = {"env_id": str(environment_id),
+                  "automake": str(is_automake)}
+        async with httpx.AsyncClient() as client:
+            response = await client.put(url="{}/player/{}".format(supervisor_api, submission_id),
+                                        files=files, data=values)
+        print("Sending submission {}... supervisor response: {}".format(submission_id,
+                                                                        response.text))
+        # TODO react to the response from the supervisor
+        # TODO make new_job request to supervisor
+
         return submission_id
     except Exception as e:
         remove_dir(submission_dir)
@@ -380,20 +398,34 @@ async def create_game(name: str = Body(...), description: str = Body(...),
                              deadline=deadline,
                              environment_id=environment_id)
 
-    game_dir, game_files_dir = get_game_directories(game_id, init=True)
+    game_dir = get_game_directory(game_id, init=True)
 
-    save_single_file(game_dir, widget, 'widget', widget_ext)
-    save_single_file(game_dir, overview, 'overview', overview_ext)
-    save_single_file(game_dir, rules, 'rules', rules_ext)
-    save_executables(game_files_dir, executables, 'game', game_exec_ext)
-    db.update_game_path(game_id=game_id, files_path=game_dir)
-    return game_id
+    try:
+        save_file(game_dir, widget, 'widget', widget_ext)
+        save_file(game_dir, overview, 'overview', overview_ext)
+        save_file(game_dir, rules, 'rules', rules_ext)
+        save_file(game_dir, executables, 'judge', game_exec_ext)
+
+        db.update_game_path(game_id=game_id, files_path=game_dir)
+
+        files = {"data": (
+            executables.filename, open('{}/judge{}'.format(game_dir, os.path.splitext(executables.filename)[1]), 'rb'))}
+        values = {"env_id": str(environment_id)}
+        async with httpx.AsyncClient() as client:
+            response = await client.put(url="{}/game/{}".format(supervisor_api, game_id),
+                                        files=files, data=values)
+        print("Sending game {}... supervisor response: {}".format(game_id, response.text))
+        # TODO react to the response from the supervisor
+        return game_id
+    except Exception as e:
+        remove_dir(game_dir)
+        db.remove_game(game_id=game_id)
+        raise e
 
 
 @app.patch('/games/{id}')
 async def update_game(id: int, name: str = Body(None), description: str = Body(None),
                       environment_id: int = Body(None), deadline: Optional[date] = Body(None),
-                      executables: Optional[UploadFile] = File(None),
                       widget: Optional[UploadFile] = File(None),
                       overview: Optional[UploadFile] = File(None),
                       rules: Optional[UploadFile] = File(None), session=Depends(teacher_session)):
@@ -405,20 +437,16 @@ async def update_game(id: int, name: str = Body(None), description: str = Body(N
                    new_deadline=deadline,
                    new_environment_id=environment_id)
 
-    game_dir, game_files_dir = get_game_directories(id, init=True)
+    game_dir = get_game_directory(id, init=True)
 
     if widget:
-        save_single_file(game_dir, widget, 'widget', widget_ext)
+        save_file(game_dir, widget, 'widget', widget_ext)
 
     if overview:
-        save_single_file(game_dir, overview, 'overview', overview_ext)
+        save_file(game_dir, overview, 'overview', overview_ext)
 
     if rules:
-        save_single_file(game_dir, rules, 'rules', rules_ext)
-
-    if executables:
-        clear_dir_contents(game_files_dir)
-        save_executables(game_files_dir, executables, 'game', game_exec_ext)
+        save_file(game_dir, rules, 'rules', rules_ext)
 
 
 @app.delete('/games/{id}')
@@ -426,7 +454,7 @@ async def remove_game(id: int, session=Depends(teacher_session)):
     game = db.get_game(game_id=id)
     if game["is_active"]:
         raise FORBIDDEN
-    game_dir, _ = get_game_directories(id)
+    game_dir = get_game_directory(id)
     remove_dir(game_dir)
     db.remove_game(game_id=id)
 
@@ -460,21 +488,24 @@ async def create_game_reference_submission(game_id: int, name: str = Body(...),
 
     submission_dir = get_game_submission_directory(game_id, submission_id, init=True)
 
-    save_executables(submission_dir, executables, 'player', submission_exec_ext)
-    db.update_ref_submission_path(submission_id=submission_id, files_path=submission_dir)
-    return submission_id
+    try:
+        save_file(submission_dir, executables, 'player', submission_exec_ext)
+        db.update_ref_submission_path(submission_id=submission_id, files_path=submission_dir)
 
+        files = {"data": (
+            executables.filename,
+            open('{}/player{}'.format(submission_dir, os.path.splitext(executables.filename)[1]), 'rb'))}
+        values = {"env_id": str(environment_id),
+                  "game_id": str(game_id)}
+        async with httpx.AsyncClient() as client:
+            response = await client.put(url="{}/ref_player/{}".format(supervisor_api, submission_id),
+                                        files=files, data=values)
+        print("Sending ref_submission {} for game {}... supervisor response: {}".format(submission_id, game_id,
+                                                                                        response.text))
+        # TODO react to the response from the supervisor
 
-@app.patch('/games/{game_id}/ref_submissions/{id}')
-async def update_game_reference_submission(game_id: int, id: int, name: str = None,
-                                           environment_id: int = None,
-                                           executables: Optional[UploadFile] = File(None),
-                                           session=Depends(teacher_session)):
-    db.update_ref_submission(submission_id=id, new_name=name,
-                             new_environment_id=environment_id)
-
-    if executables:
-        submission_dir = get_game_submission_directory(game_id, id)
-        clear_dir_contents(submission_dir)
-        save_executables(submission_dir, executables, 'player', submission_exec_ext)
-    return id
+        return submission_id
+    except Exception as e:
+        remove_dir(submission_dir)
+        db.remove_ref_submission(submission_id=submission_id)
+        raise e

@@ -8,5 +8,5 @@ name = "colosseumdb"
 [servers]
 
 [servers.alpha]
-address = "https://localhost:8001"
+url = "https://localhost:8001"
 token = "password"

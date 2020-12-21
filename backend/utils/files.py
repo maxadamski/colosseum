@@ -1,6 +1,5 @@
 import os
 import shutil
-import zipfile
 import markdown
 
 from typing import IO
@@ -11,8 +10,8 @@ from pathlib import Path
 widget_ext = ['.html']
 overview_ext = ['.md']
 rules_ext = ['.md']
-game_exec_ext = ['.zip', '.py', '.cpp']
-submission_exec_ext = ['.zip', '.py', '.cpp']
+game_exec_ext = ['.zip', '.py', '.cpp', '.c']
+submission_exec_ext = ['.zip', '.py', '.cpp', '.c']
 
 FILES_DIR = os.path.join(os.getcwd(), 'files')
 GAMES_DIR = os.path.join(FILES_DIR, 'games')
@@ -28,6 +27,7 @@ def read_file_limited(file, mb_limit=100):
     for chunk in file.file:
         real_file_size += len(chunk)
         if real_file_size > mb_limit * 1000000:
+            os.unlink(temp.name)
             raise BAD_SIZE
         temp.write(chunk)
     temp.close()
@@ -36,12 +36,6 @@ def read_file_limited(file, mb_limit=100):
 
 def move_temp_file(file, path):
     shutil.move(file.name, path)
-
-
-def unpack_temp_zip_file(file, path):
-    with zipfile.ZipFile(file.name, 'r') as zip_ref:
-        zip_ref.extractall(path)
-    os.remove(file.name)
 
 
 def clear_dir_contents(directory):
@@ -56,12 +50,11 @@ def remove_dir(directory):
     shutil.rmtree(directory, ignore_errors=True)
 
 
-def get_game_directories(game_id, init=False):
+def get_game_directory(game_id, init=False):
     game_dir = os.path.join(GAMES_DIR, str(game_id))
-    game_files_dir = os.path.join(game_dir, 'files')
     if init:
-        Path(game_files_dir).mkdir(parents=True, exist_ok=True)
-    return game_dir, game_files_dir
+        Path(game_dir).mkdir(parents=True, exist_ok=True)
+    return game_dir
 
 
 def get_game_submission_directory(game_id, submission_id, init=False):
@@ -78,25 +71,12 @@ def get_submission_directory(submission_id, init=False):
     return submission_dir
 
 
-def save_single_file(directory, file, name, accept_ext):
+def save_file(directory, file, name, accept_ext):
     ext = os.path.splitext(file.filename)[1]
     if ext in accept_ext:
         temp_path = read_file_limited(file)
         location = os.path.join(directory, name + ext)
         move_temp_file(temp_path, location)
-    else:
-        raise BAD_EXTENSION
-
-
-def save_executables(game_exec_dir, file, name, accept_ext):
-    ext = os.path.splitext(file.filename)[1]
-    if ext in accept_ext:
-        temp_path = read_file_limited(file)
-        if ext == '.zip':
-            unpack_temp_zip_file(temp_path, game_exec_dir)
-        else:
-            single_file_name = os.path.join(game_exec_dir, name + ext)
-            move_temp_file(temp_path, single_file_name)
     else:
         raise BAD_EXTENSION
 
