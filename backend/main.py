@@ -258,14 +258,13 @@ async def create_student_team_submission(is_automake: bool = Body(...),
 
         files = {"data": (
             executables.filename,
-            open('{}/player{}'.format(submission_dir, os.path.splitext(executables.filename)[1]), 'rb'))}
+            open(f'{submission_dir}/player{os.path.splitext(executables.filename)[1]}', 'rb'))}
         values = {"env_id": str(environment_id),
                   "automake": str(is_automake)}
         async with httpx.AsyncClient() as client:
-            response = await client.put(url="{}/player/{}".format(supervisor_api, submission_id),
+            response = await client.put(url=f"{supervisor_api}/player/{submission_id}",
                                         files=files, data=values)
-        print("Sending submission {}... supervisor response: {}".format(submission_id,
-                                                                        response.text))
+        print(f"Sending submission {submission_id}... supervisor response: {response.text}")
         # TODO react to the response from the supervisor
         # TODO make new_job request to supervisor
 
@@ -409,12 +408,11 @@ async def create_game(name: str = Body(...), description: str = Body(...),
         db.update_game_path(game_id=game_id, files_path=game_dir)
 
         files = {"data": (
-            executables.filename, open('{}/judge{}'.format(game_dir, os.path.splitext(executables.filename)[1]), 'rb'))}
+            executables.filename, open(f'{game_dir}/judge{os.path.splitext(executables.filename)[1]}', 'rb'))}
         values = {"env_id": str(environment_id)}
         async with httpx.AsyncClient() as client:
-            response = await client.put(url="{}/game/{}".format(supervisor_api, game_id),
-                                        files=files, data=values)
-        print("Sending game {}... supervisor response: {}".format(game_id, response.text))
+            response = await client.put(url=f"{supervisor_api}/game/{game_id}", files=files, data=values)
+        print(f"Sending game {game_id}... supervisor response: {response.text}")
         # TODO react to the response from the supervisor
         return game_id
     except Exception as e:
@@ -494,14 +492,12 @@ async def create_game_reference_submission(game_id: int, name: str = Body(...),
 
         files = {"data": (
             executables.filename,
-            open('{}/player{}'.format(submission_dir, os.path.splitext(executables.filename)[1]), 'rb'))}
+            open(f'{submission_dir}/player{os.path.splitext(executables.filename)[1]}', 'rb'))}
         values = {"env_id": str(environment_id),
                   "game_id": str(game_id)}
         async with httpx.AsyncClient() as client:
-            response = await client.put(url="{}/ref_player/{}".format(supervisor_api, submission_id),
-                                        files=files, data=values)
-        print("Sending ref_submission {} for game {}... supervisor response: {}".format(submission_id, game_id,
-                                                                                        response.text))
+            response = await client.put(url=f"{supervisor_api}/ref_player/{submission_id}", files=files, data=values)
+        print(f"Sending ref_submission {submission_id} for game {game_id}... supervisor response: {response.text}")
         # TODO react to the response from the supervisor
 
         return submission_id
