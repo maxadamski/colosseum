@@ -1,5 +1,12 @@
+[db]
 user = "colosseumdb_admin"
 password = "pwd"
 host = "localhost"
 port = 5432
 name = "colosseumdb"
+
+[servers]
+
+[servers.alpha]
+address = "https://localhost:8001"
+token = "password"

@@ -22,12 +22,13 @@ app.add_middleware(CORSMiddleware,
                    )
 
 # load config file
-db_config = toml.load('config/dbconfig.toml')
-db_user = db_config['user']
-db_password = db_config['password']
-db_port = db_config['port']
-db_host = db_config['host']
-db_name = db_config['name']
+config = toml.load('config.toml')
+db_user = config['db']['user']
+db_password = config['db']['password']
+db_port = config['db']['port']
+db_host = config['db']['host']
+db_name = config['db']['name']
+servers = config['servers']
 
 # compile database queries from directory
 db = pugsql.module('database/queries/')
