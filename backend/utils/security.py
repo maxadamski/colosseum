@@ -4,6 +4,7 @@ from fastapi import HTTPException
 from utils.time import *
 
 LOGIN_TIMEOUT = 24  # in hours
+SUBMISSION_TIME_LIMIT = 3  # in minutes
 
 BAD_REQUEST = HTTPException(400, 'Malformed request')
 BAD_LOGIN = HTTPException(403, 'Incorrect username or password')
@@ -34,8 +35,23 @@ def verify_token(token: str, hash: bytes) -> bytes:
     return sha256_crypt.verify(token, hash)
 
 
-def create_session(redis, login, key, exp, user_id):
-    redis.hset(login, mapping=dict(key=key, exp=exp, user_id=user_id))
+def create_session(redis, login, key, exp, user_id, next_submit):
+    redis.hset(login, mapping=dict(key=key, exp=exp, user_id=user_id, next_submit=next_submit))
+
+
+def check_submission_time(redis, login):
+    session = redis.hgetall(login)
+    next_submit = float(session[b'next_submit'])
+    if utcnow().timestamp() < next_submit:
+        return False
+    else:
+        return True
+
+
+def update_submission_time(redis, login):
+    next_submit = utcfuture(minutes=SUBMISSION_TIME_LIMIT).timestamp()
+    redis.hset(login, mapping=dict(next_submit=next_submit))
+    return next_submit
 
 
 def validate_session(redis, login: str, token: str):

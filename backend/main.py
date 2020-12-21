@@ -85,7 +85,8 @@ async def login(user: UserLogin):
     if student is not None and verify_password(password, student['password']):
         key = make_session_token()
         exp = utcfuture(hours=LOGIN_TIMEOUT).timestamp()
-        create_session(student_sessions, login=student['login'], key=hashed_token(key), exp=exp, user_id=student['id'])
+        create_session(student_sessions, login=student['login'], key=hashed_token(key), exp=exp, user_id=student['id'],
+                       next_submit=utcnow().timestamp())
         return dict(key=key, exp=exp, is_teacher=False)
 
     teacher = db.get_teacher_by_login(login=login)
@@ -245,6 +246,9 @@ async def create_student_team_submission(is_automake: bool = Body(...),
                                          environment_id: int = Body(...),
                                          executables: UploadFile = File(...), session=Depends(student_session)):
     student_id = session['user_id']
+    if not check_submission_time(student_sessions, session['login']):
+        raise HTTPException(403, 'Forbidden: Only one submission in 3 minutes!')
+
     student_team = db.get_student_team(student_id=student_id)
     submission_id = db.insert_team_submission(is_automake=is_automake,
                                               environment_id=environment_id,
@@ -255,6 +259,7 @@ async def create_student_team_submission(is_automake: bool = Body(...),
     try:
         save_file(submission_dir, executables, 'player', submission_exec_ext)
         db.update_team_submission_path(submission_id=submission_id, files_path=submission_dir)
+        update_submission_time(student_sessions, session['login'])
 
         files = {"data": (
             executables.filename,
