@@ -15,6 +15,7 @@ import asyncio as aio
 from files import *
 
 config = toml.load('config.toml')
+jobs = dict()
 
 app = FastAPI()
 
@@ -35,7 +36,7 @@ async def api_token(api_token: str):
 @app.get('/job/{id}')
 async def get_job(id: int):
     # TODO: get results of job from RAM/redis
-    return dict(status='?', description='?')
+    return jobs[id]
 
 
 @app.put('/job/{id}')
@@ -65,9 +66,12 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
     except aio.TimeoutError:
         raise HTTPException(422, 'Judge timeout')
 
-    # TODO: store results in RAM/redis
+    result = out.decode('utf-8').rstrip().split('\n')[-1]
 
-    return out
+    # TODO: store results in redis
+    jobs[id] = dict(status='done', result=result)
+
+    return dict(result=result)
 
 
 @app.put('/player/{id}')
@@ -85,6 +89,7 @@ async def new_player(id: int, env_id: int = Body(...), data: UploadFile = File(.
     c.start(useinit=True, daemonize=False, cmd=('/util/make_player', str(env_id), str(automake)))
     while c.state == 'RUNNING':
         await aio.sleep(.01)
+        print('running')
 
     rootfs = c.get_config_item('lxc.rootfs.path')
     cmd_out_path = os.path.join(rootfs, 'make_player.log')
@@ -95,8 +100,6 @@ async def new_player(id: int, env_id: int = Body(...), data: UploadFile = File(.
 
     if cmd_out != 'OK\n':
         raise HTTPException(422, f'Player compilation failed with "{cmd_out}"')
-
-    return 'OK' # TODO(piotr): should we send something more in response?
 
 
 @app.put('/ref_player/{id}')
@@ -109,8 +112,6 @@ async def new_ref_player(id: int, game_id: int = Body(...), env_id: int = Body(.
     compile_result = subprocess.call(cmd, shell=True, cwd=submission_dir)
     # TODO: React according to the returned value
 
-    return "Dummy ref_player response"
-
 
 @app.put('/game/{id}')
 async def new_game(id: int, env_id: int = Body(...), data: UploadFile = File(...)):
@@ -122,4 +123,3 @@ async def new_game(id: int, env_id: int = Body(...), data: UploadFile = File(...
     compile_result = subprocess.call(cmd, shell=True, cwd=game_files_dir)
     # TODO: React according to the returned value
 
-    return "Dummy game response"
