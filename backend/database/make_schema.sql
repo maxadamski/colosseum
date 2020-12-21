@@ -101,6 +101,10 @@ CREATE TABLE tournament_results
 (
     id                   SERIAL PRIMARY KEY,
     result               INTEGER   NOT NULL,
+    sub1_stdout         VARCHAR(200) DEFAULT 'UNDEFINED',
+    sub1_stderr         VARCHAR(200) DEFAULT 'UNDEFINED',
+    sub2_stdout         VARCHAR(200) DEFAULT 'UNDEFINED',
+    sub2_stderr         VARCHAR(200) DEFAULT 'UNDEFINED',
     execution_time       TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     first_submission_id  INTEGER   REFERENCES team_submissions (id) ON DELETE SET NULL,
     second_submission_id INTEGER   REFERENCES team_submissions (id) ON DELETE SET NULL
@@ -109,7 +113,11 @@ CREATE TABLE tournament_results
 CREATE TABLE ref_results
 (
     id             SERIAL PRIMARY KEY,
-    result         INTEGER   NOT NULL,
+    result         VARCHAR(50) DEFAULT 'UNDEFINED',
+    sub_stdout         VARCHAR(200) DEFAULT 'UNDEFINED',
+    sub_stderr         VARCHAR(200) DEFAULT 'UNDEFINED',
+    ref_stdout         VARCHAR(200) DEFAULT 'UNDEFINED',
+    ref_stderr         VARCHAR(200) DEFAULT 'UNDEFINED',
     execution_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     submission_id  INTEGER   REFERENCES team_submissions (id) ON DELETE SET NULL,
     reference_id   INTEGER   REFERENCES ref_submissions (id) ON DELETE SET NULL

@@ -3,6 +3,7 @@ from fastapi import FastAPI, Depends, Body, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 
+import json
 import toml
 import pugsql
 from redis import Redis
@@ -15,6 +16,7 @@ from models import *
 from datetime import date
 
 import httpx
+import asyncio
 
 app = FastAPI()
 
@@ -241,6 +243,24 @@ async def get_team_submissions(id: int, session=Depends(student_session)):
     return db.get_team_submissions(team_id=id)
 
 
+async def run_job(game_id, submission_id, ref_player_id):
+    job_id = db.insert_ref_result(submission_id=submission_id, reference_id=ref_player_id)
+    values = {"game_id": game_id,
+              "p1_id": submission_id,
+              "p2_id": ref_player_id}
+    try:
+        async with httpx.AsyncClient() as client:
+            response = await client.put(url=f"{supervisor_api}/job/{job_id}", params=values)
+    except httpx.HTTPError as exc:
+        print(f"Error while requesting {exc.request.url!r}.")
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url=f"{supervisor_api}/job/{job_id}")
+    response_dict = json.loads(response.text)
+    db.update_ref_result(result_id=job_id, result=response_dict['result'],
+                         sub_stdout=response_dict['p1_stdout'], sub_stderr=response_dict['p1_stderr'],
+                         ref_stdout=response_dict['p2_stdout'], ref_stderr=response_dict['p2_stderr'])
+
+
 @app.post('/teams/me/submissions')
 async def create_student_team_submission(is_automake: bool = Body(...),
                                          environment_id: int = Body(...),
@@ -266,17 +286,28 @@ async def create_student_team_submission(is_automake: bool = Body(...),
             open(f'{submission_dir}/player{os.path.splitext(executables.filename)[1]}', 'rb'))}
         values = {"env_id": str(environment_id),
                   "automake": str(is_automake)}
+
         async with httpx.AsyncClient() as client:
+            print(f"Sending submission {submission_id}...")
             response = await client.put(url=f"{supervisor_api}/player/{submission_id}",
                                         files=files, data=values)
-        print(f"Sending submission {submission_id}... supervisor response: {response.text}")
-        # TODO react to the response from the supervisor
-        # TODO make new_job request to supervisor
+            print(f"Supervisor response to sent submission {submission_id}: {response.text}")
+
+        active_game_id = db.get_active_game()['id']
+        active_ref_submissions = db.get_game_ref_submissions(game_id=active_game_id)
+
+        # TODO Async attempt, didnt work?
+        # ref_games = [run_job(active_game_id, submission_id, ref_player['id']) for ref_player in active_ref_submissions]
+        # await asyncio.gather(*ref_games, return_exceptions=True)
+
+        for ref_player in active_ref_submissions:
+            await run_job(active_game_id, submission_id, ref_player['id'])
 
         return submission_id
     except Exception as e:
         remove_dir(submission_dir)
         db.remove_team_submission(submission_id=submission_id)
+        db.remove_ref_results(submission_id=submission_id)
         raise e
 
 
@@ -416,9 +447,9 @@ async def create_game(name: str = Body(...), description: str = Body(...),
             executables.filename, open(f'{game_dir}/judge{os.path.splitext(executables.filename)[1]}', 'rb'))}
         values = {"env_id": str(environment_id)}
         async with httpx.AsyncClient() as client:
+            print(f"Sending game {game_id}...")
             response = await client.put(url=f"{supervisor_api}/game/{game_id}", files=files, data=values)
-        print(f"Sending game {game_id}... supervisor response: {response.text}")
-        # TODO react to the response from the supervisor
+            print(f"Supervisor response for game {game_id}: {response.text}")
         return game_id
     except Exception as e:
         remove_dir(game_dir)
@@ -501,8 +532,9 @@ async def create_game_reference_submission(game_id: int, name: str = Body(...),
         values = {"env_id": str(environment_id),
                   "game_id": str(game_id)}
         async with httpx.AsyncClient() as client:
+            print(f"Sending ref_submission {submission_id} for game {game_id}...")
             response = await client.put(url=f"{supervisor_api}/ref_player/{submission_id}", files=files, data=values)
-        print(f"Sending ref_submission {submission_id} for game {game_id}... supervisor response: {response.text}")
+            print(f"supervisor response for ref_submission {submission_id} for game {game_id}: {response.text}")
         # TODO react to the response from the supervisor
 
         return submission_id
