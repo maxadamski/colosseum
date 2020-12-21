@@ -1,0 +1,56 @@
+#!/bin/bash
+while [ $# -ge 1 ]; do case "$1" in
+  --name=*) NAME="${1#*=}";;
+  --path=*) config="${1#*=}/config";; # …/name
+  --rootfs=*) rootfs="${1#*=}";; # …/rootfs
+  --colosseum) colosseum="$2"; shift;;
+  --player) player="$2"; shift;;
+  --mapped-uid) if [ $# -ge 2 ]; then LXCUID="$2"; shift; fi;;
+  --mapped-gid) if [ $# -ge 2 ]; then LXCGRP="$2"; shift; fi;;
+  *) echo >&2 "unknown options: '$*'"; exit 2;;
+esac; shift; done
+if [ $colosseum ]; then
+    share="$colosseum/lxc_share"
+    rootfs="$colosseum/containers/$NAME"
+    mkdir -p "$rootfs"
+else
+    share="/bin"
+fi
+
+baseconfig=~/.config/lxc/default.conf
+cat <<EOF >"$config"
+# $baseconfig
+EOF
+cat "$baseconfig" >>"$config"
+
+cat <<EOF >>"$config"
+# lxc-player
+lxc.rootfs.path = $rootfs
+lxc.uts.name = $NAME
+lxc.pty.max = 1024
+lxc.cap.drop = sys_module mac_admin mac_override sys_time
+lxc.apparmor.profile = unconfined
+lxc.mount.entry = /bin bin none ro,bind 0 0
+lxc.mount.entry = /lib lib none ro,bind 0 0
+lxc.mount.entry = /sbin sbin none ro,bind 0 0
+lxc.mount.entry = /usr usr none ro,bind 0 0
+lxc.mount.entry = $share util none ro,bind 0 0
+lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed
+EOF
+DIRS=(); for D in bin dev etc home lib proc root sbin sys tmp usr var util; do DIRS+=("$rootfs/$D"); done
+mkdir --parents "${DIRS[@]}"
+touch "$rootfs/etc/fstab"
+mkfifo -m 666 "$rootfs/fifo_in" "$rootfs/fifo_out"
+if [ $player ]; then
+    filename=$(basename -- "$player")
+    cp "$player" "$rootfs/root/$filename"
+    rm "$player"
+fi
+
+ln --symbolic "$rootfs/run" "$rootfs/var/run"
+cat <<EOF >"$rootfs/etc/passwd"
+root:x:0:0:root:/root:/bin/bash
+EOF
+cat <<EOF >"$rootfs/etc/group"
+root:x:0:root
+EOF
