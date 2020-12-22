@@ -124,18 +124,20 @@ export default {
             submissionForm.append('environment_id', this.submitEnv)
             submissionForm.append('is_automake', this.isAutomake)
             this.$s.teamSubmissions.unshift({
-                date: "-",
-                env: "-",
-                status: "Submitting...",
+                date: new Date().toLocaleDateString(),
+                env: this.submitEnv,
+                status: "submitted",
                 score: "-",
-                id: -1,
+                id: '',
                 primary: false
             },)
             const [submissionPost, submissionPostStatus] = await this.safeApi('POST', `/teams/me/submissions`, submissionForm)
             if (submissionPostStatus === 415) {
-                console.log(`Bad extension! (status conde ${submissionPostStatus})`)
+                this.submitError = `Bad extension! (status code ${submissionPostStatus})`
             } else if (submissionPostStatus === 413) {
-                console.log(`Bad size! (status conde ${submissionPostStatus})`)
+                this.submitError = `Bad size! (status code ${submissionPostStatus}`
+            } else if (submissionPostStatus === 403) {
+                this.submitError = `Forbidden! (status code ${submissionPostStatus})`
             } else {
                 const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
                 this.$s.teamSubmissions = teamSubmissions
@@ -203,6 +205,8 @@ export default {
 
                     td(v-if="isLeader && member.id !== $s.studentId ")
                         button(@click="safeApi('PATCH', `/teams/${$s.teamId}/leader/${member.id}`);$s.teamLeaderId = member.id") Set Leader
+                    td(v-else) -
+
                 tr(v-for="(invited, index) in $s.teamInvitations" :key="`TI-${invited.id}`")
                     td {{ invited.nickname}}
 
@@ -264,6 +268,9 @@ export default {
                     h4 Actions
                     .hflex.hlist-1
                         button(@click="sendSubmission()" :disabled='!submissionFile || !submitEnv || !isAutomake') Submit
+
+
+            p(v-if='submitError' style='color: red') {{submitError}}
 
 
             h3 My Submissions

@@ -28,6 +28,7 @@ def isarchive(ext):
 def unpack_data(data, dst_dir, ext):
     with NamedTemporaryFile(suffix=ext, delete=True) as f:
         f.write(data)
+        f.seek(0)
         unpack_archive(f.name, dst_dir)
     files = os.listdir(dst_dir)
     if len(files) == 1:
@@ -84,11 +85,13 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = 
     p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
     judge = await aio_shell(f'files/games/{id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
     try:
-        out, err = await aio.wait_for(judge.communicate(), 5)
+        out, err = await aio.wait_for(judge.communicate(), 3*60)
         out = out.decode('utf-8').rstrip()
         result = out.split('\n')[-1]
     except aio.TimeoutError:
         result = 'TIMEOUT'
+        out, err = '', ''
+    job_status[id] = dict(status='in progress', result='UNKNOWN', log=dict(judge='', p1='', p2=''))
 
     if p1.returncode is None: p1.kill()
     if p2.returncode is None: p2.kill()
@@ -135,7 +138,7 @@ async def build_player(id, env_id, data, automake, ref=None):
 
     content = await data.read()
     name = os.path.basename(data.filename)
-    ext = pathext(name).lower()
+    ext = pathext(name)
     if isarchive(ext):
         unpack_data(content, player_dir, ext)
     else:
@@ -148,8 +151,9 @@ async def build_player(id, env_id, data, automake, ref=None):
 
     # TODO: handle automake
 
-    proc = await lxc_shell(container_name, 'export PATH && cd root && chmod +x build && ./build', stdout=PIPE, stderr=STDOUT)
-    out, _ = await proc.communicate()
-    validate_status(proc.returncode)
+    if os.path.exists(os.path.join('containers', container_name, 'root', 'build')):
+        proc = await lxc_shell(container_name, 'export PATH && cd root && chmod +x build && ./build', stdout=PIPE, stderr=STDOUT)
+        out, _ = await proc.communicate()
+        validate_status(proc.returncode)
     return dict(log=out)
 
