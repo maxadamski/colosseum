@@ -35,8 +35,11 @@ def verify_token(token: str, hash: bytes) -> bytes:
     return sha256_crypt.verify(token, hash)
 
 
-def create_session(redis, login, key, exp, user_id, next_submit):
-    redis.hset(login, mapping=dict(key=key, exp=exp, user_id=user_id, next_submit=next_submit))
+def create_session(redis, login, key, exp, user_id, next_submit=None):
+    if next_submit:
+        redis.hset(login, mapping=dict(key=key, exp=exp, user_id=user_id, next_submit=next_submit))
+    else:
+        redis.hset(login, mapping=dict(key=key, exp=exp, user_id=user_id))
 
 
 def check_submission_time(redis, login):

@@ -1,4 +1,3 @@
-import requests
 from fastapi import FastAPI, Depends, Body, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -296,12 +295,8 @@ async def create_student_team_submission(is_automake: bool = Body(...),
         active_game_id = db.get_active_game()['id']
         active_ref_submissions = db.get_game_ref_submissions(game_id=active_game_id)
 
-        # TODO Async attempt, didnt work?
-        # ref_games = [run_job(active_game_id, submission_id, ref_player['id']) for ref_player in active_ref_submissions]
-        # await asyncio.gather(*ref_games, return_exceptions=True)
-
-        for ref_player in active_ref_submissions:
-            await run_job(active_game_id, submission_id, ref_player['id'])
+        ref_games = [run_job(active_game_id, submission_id, ref_player['id']) for ref_player in active_ref_submissions]
+        await asyncio.gather(*ref_games, return_exceptions=True)
 
         return submission_id
     except Exception as e:
@@ -355,6 +350,20 @@ async def update_teacher(data: TeacherPatch, session=Depends(teacher_session)):
 @app.get('/environments')
 async def get_environments():
     return db.get_environments()
+
+
+#
+# Reference player results endpoints
+#
+
+@app.get('/submissions/{id}/results/ref')
+async def get_submission_ref_results(id: int, session=Depends(student_session)):
+    student_id = session['user_id']
+    student_team = db.get_student_team(student_id=student_id)
+    submission = db.get_team_submission(submission_id=id)
+    if submission['team_id'] != student_team['id']:
+        raise FORBIDDEN
+    return db.get_ref_results(submission_id=id)
 
 
 #
