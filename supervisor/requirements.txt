@@ -1,5 +1,8 @@
 fastapi
 uvicorn
+gunicorn
+httptools
+uvloop
 toml
 redis
 passlib
