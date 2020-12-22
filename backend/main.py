@@ -243,7 +243,7 @@ async def get_team_submissions(id: int, session=Depends(student_session)):
 
 
 async def run_job(game_id, submission_id, ref_player_id):
-    job_id = db.insert_ref_result(submission_id=submission_id, reference_id=ref_player_id)
+    job_id = db.insert_ref_result(submission_id=submission_id, reference_id=ref_player_id, result='unknown')
     values = {"game_id": game_id,
               "p1_id": submission_id,
               "p2_id": ref_player_id}
@@ -256,8 +256,8 @@ async def run_job(game_id, submission_id, ref_player_id):
             response = await client.get(url=f"{supervisor_api}/job/{job_id}")
     response_dict = json.loads(response.text)
     db.update_ref_result(result_id=job_id, result=response_dict['result'],
-                         sub_stdout=response_dict['p1_stdout'], sub_stderr=response_dict['p1_stderr'],
-                         ref_stdout=response_dict['p2_stdout'], ref_stderr=response_dict['p2_stderr'])
+                         sub_stdout=response_dict['log']['p1'],
+                         ref_stdout=response_dict['log']['p2'])
 
 
 @app.post('/teams/me/submissions')
@@ -504,7 +504,8 @@ async def remove_game(id: int, session=Depends(teacher_session)):
 
 @app.post('/games/activate/{id}')
 async def activate_game(id: int, session=Depends(teacher_session)):
-    db.remove_all_students()
+    #TODO: keep students
+    #db.remove_all_students()
     db.remove_all_teams()
     db.remove_all_groups()
     db.remove_all_team_submissions()
