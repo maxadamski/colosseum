@@ -91,6 +91,7 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = 
     except aio.TimeoutError:
         result = 'TIMEOUT'
         out, err = '', ''
+    job_status[id] = dict(status='in progress', result='UNKNOWN', log=dict(judge='', p1='', p2=''))
 
     if p1.returncode is None: p1.kill()
     if p2.returncode is None: p2.kill()
