@@ -105,7 +105,7 @@ Vue.mixin({
             return [json, resp.status]
         },
         async doLogin() {
-            const login = 'student1'
+            const login = this.$s.userType === 'teacher' ? 'teacher' : 'student1'
             const password = 'pwd'
             const [data, status] = await this.safeApi('POST', '/login', {login: login, password: password})
             if (status != 200) {
