@@ -1,27 +1,27 @@
 #!/bin/bash
+set -e
+
+rootfs=.
+share="/bin"
+copy=""
 while [ $# -ge 1 ]; do case "$1" in
   --name=*) NAME="${1#*=}";;
   --path=*) config="${1#*=}/config";; # …/name
   --rootfs=*) rootfs="${1#*=}";; # …/rootfs
-  --colosseum) colosseum="$2"; shift;;
-  --player) player="$2"; shift;;
+  --sharedir=*) share="${1#*=}"; share="${share%/}";;
+  --copydir=*) copy="${1#*=}"; copy="${copy%/}";;
   --mapped-uid) if [ $# -ge 2 ]; then LXCUID="$2"; shift; fi;;
   --mapped-gid) if [ $# -ge 2 ]; then LXCGRP="$2"; shift; fi;;
   *) echo >&2 "unknown options: '$*'"; exit 2;;
 esac; shift; done
-if [ $colosseum ]; then
-    share="$colosseum/lxc_share"
-    rootfs="$colosseum/containers/$NAME"
-    mkdir -p "$rootfs"
-else
-    share="/bin"
-fi
+rootfs="$(realpath $rootfs/$NAME)"
+share="$(realpath $share)"
 
-baseconfig=~/.config/lxc/default.conf
-cat <<EOF >"$config"
-# $baseconfig
-EOF
-cat "$baseconfig" >>"$config"
+echo root: $rootfs
+echo share: $share
+echo copy: $copy
+
+cat ~/.config/lxc/default.conf > "$config"
 
 cat <<EOF >>"$config"
 # lxc-player
@@ -34,23 +34,26 @@ lxc.mount.entry = /bin bin none ro,bind 0 0
 lxc.mount.entry = /lib lib none ro,bind 0 0
 lxc.mount.entry = /sbin sbin none ro,bind 0 0
 lxc.mount.entry = /usr usr none ro,bind 0 0
-lxc.mount.entry = $share util none ro,bind 0 0
+lxc.mount.entry = $share share none ro,bind 0 0
 lxc.mount.auto = cgroup:mixed proc:mixed sys:mixed
 EOF
-DIRS=(); for D in bin dev etc home lib proc root sbin sys tmp usr var util; do DIRS+=("$rootfs/$D"); done
-mkdir --parents "${DIRS[@]}"
-touch "$rootfs/etc/fstab"
-mkfifo -m 666 "$rootfs/fifo_in" "$rootfs/fifo_out"
-if [ $player ]; then
-    filename=$(basename -- "$player")
-    cp "$player" "$rootfs/root/$filename"
-    rm "$player"
-fi
 
-ln --symbolic "$rootfs/run" "$rootfs/var/run"
+mkdir -p $rootfs/{bin,dev,etc,home,lib,proc,root,sbin,sys,tmp,usr,var,share}
+
+touch "$rootfs/etc/fstab"
+
 cat <<EOF >"$rootfs/etc/passwd"
 root:x:0:0:root:/root:/bin/bash
 EOF
+
 cat <<EOF >"$rootfs/etc/group"
 root:x:0:root
 EOF
+
+# set up colosseum channels
+rm -f $rootfs/root/fifo_{in,out}
+mkfifo -m 666 $rootfs/root/fifo_{in,out}
+
+# copy player data
+cp -r $copy/. $rootfs/root/
+
