@@ -75,14 +75,14 @@ async def get_job(id: int):
     return job_status[id]
 
 @app.put('/job/{id}')
-async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
-    p1_name, p2_name = f'player-{p1_id}', f'player-{p2_id}'
-    fifos = ' '.join(f'containers/player-{x}/root/fifo_{y}' for x in [p1_id,p2_id] for y in ['in','out'])
+async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = False):
+    p1_name, p2_name = f'player-{p1_id}', f'ref-{p2_id}' if is_ref else f'player-{p2_id}'
+    fifos = ' '.join(f'containers/{x}/root/fifo_{y}' for x in [p1_name,p2_name] for y in ['in','out'])
     p1_out = NamedTemporaryFile(delete=True)
     p2_out = NamedTemporaryFile(delete=True)
     p1 = await lxc_shell(p1_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p1_out, stderr=STDOUT)
     p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
-    judge = await aio_shell(f'files/games/{id}/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
+    judge = await aio_shell(f'files/games/{id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
     try:
         out, err = await aio.wait_for(judge.communicate(), 5)
         out = out.decode('utf-8').rstrip()
@@ -105,17 +105,19 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int):
 
 @app.put('/player/{id}')
 async def new_player(id: int, env_id: int = Body(...), data: UploadFile = File(...), automake: bool = Body(True)):
-    return await build_player(id, env_id, data, automake, ref=False)
+    return await build_player(id, env_id, data, automake)
 
+# TODO: refactor into put /game/{game_id}/ref/{id}
 @app.put('/ref_player/{id}')
 async def new_ref_player(id: int, game_id: int = Body(...), env_id: int = Body(...), data: UploadFile = File(...)):
-    return await build_player(id, env_id, data, automake, ref=True)
+    return await build_player(id, env_id, data, automake=False, ref=game_id)
 
+# TODO: refactor into put /game/{game_id}/judge
 @app.put('/game/{id}')
 async def new_game(id: int, env_id: int = Body(...), data: UploadFile = File(...)):
-    game_dir = os.path.join('files', 'games', str(id))
+    game_dir = os.path.join('files', 'games', str(id), 'judge')
     if os.path.exists(game_dir): shutil.rmtree(game_dir)
-    os.mkdir(game_dir)
+    os.makedirs(game_dir)
     content = await data.read()
     # TODO: if ext is not archive
     unpack_data(content, game_dir, pathext(data.filename))
@@ -124,12 +126,12 @@ async def new_game(id: int, env_id: int = Body(...), data: UploadFile = File(...
     validate_status(proc.returncode)
     return dict(log=out)
 
-async def build_player(id, env_id, data, automake, ref=False):
-    base_dir = 'refs' if ref else 'players'
+async def build_player(id, env_id, data, automake, ref=None):
+    base_dir = 'players' if ref is None else os.path.join('games', str(ref), 'refs')
     player_dir = os.path.join('files', base_dir, str(id))
-    container_name = f'player-{id}'
+    container_name = f'ref-{id}' if ref else f'player-{id}'
     if os.path.exists(player_dir): shutil.rmtree(player_dir)
-    os.mkdir(player_dir)
+    os.makedirs(player_dir)
 
     content = await data.read()
     name = os.path.basename(data.filename)

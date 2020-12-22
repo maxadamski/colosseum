@@ -68,7 +68,7 @@ typedef struct {
     PentagoMove move;
 } PickResult;
 
-PickResult pick_best_move(int in, int out, char player, int max_depth) {
+PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha, i32 betha) {
     assert(max_depth >= 0);
     u8 buf[0x1000];
     i32 i_count, j_count, r_count;
@@ -122,16 +122,19 @@ PickResult pick_best_move(int in, int out, char player, int max_depth) {
             score = get_and_score_board(in, out, player);
         } else {
             char other_p = (player == 'B') ? 'W' : 'B';
-            PickResult pick = pick_best_move(in, out, other_p, max_depth-1);
+            PickResult pick = pick_best_move(in, out, other_p, max_depth-1, -betha, -alpha);
             score = -pick.score;
         }
 
         if (score > result.score) {
             result.score = score;
             result.move = (PentagoMove){i[move], j[move], r[move]};
+            alpha = score;
         }
 
         mping(out, MSG_UNDO_MOVE);
+
+        if (alpha >= betha) return result;
     }
     return result;
 }
@@ -157,7 +160,7 @@ int main(int argc, char **argv) {
     u8 r[1024];
 
     while (1) {
-        PickResult pick = pick_best_move(in, out, player, 1);
+        PickResult pick = pick_best_move(in, out, player, 3, INT32_MIN, INT32_MAX);
         PentagoMove m = pick.move;
         printf("%c picked (%u, %u) %u with score %d\n", player, m.i, m.j, m.rotation, pick.score);
         msendf(out, MSG_COMMIT_MOVE, "%u %u %u", m.i, m.j, m.rotation);
