@@ -1,3 +1,9 @@
+-- :name get_ref_results :many
+SELECT *
+FROM ref_results
+WHERE submission_id = :submission_id;
+
+
 -- :name insert_ref_result :scalar
 INSERT INTO ref_results(submission_id, reference_id)
 VALUES (:submission_id, :reference_id)

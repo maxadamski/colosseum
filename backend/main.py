@@ -1,4 +1,3 @@
-import requests
 from fastapi import FastAPI, Depends, Body, Header, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -355,6 +354,20 @@ async def update_teacher(data: TeacherPatch, session=Depends(teacher_session)):
 @app.get('/environments')
 async def get_environments():
     return db.get_environments()
+
+
+#
+# Reference player results endpoints
+#
+
+@app.get('/submissions/{id}/results/ref')
+async def get_submission_ref_results(id: int, session=Depends(student_session)):
+    student_id = session['user_id']
+    student_team = db.get_student_team(student_id=student_id)
+    submission = db.get_team_submission(submission_id=id)
+    if submission['team_id'] != student_team['id']:
+        raise FORBIDDEN
+    return db.get_ref_results(submission_id=id)
 
 
 #
