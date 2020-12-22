@@ -295,12 +295,8 @@ async def create_student_team_submission(is_automake: bool = Body(...),
         active_game_id = db.get_active_game()['id']
         active_ref_submissions = db.get_game_ref_submissions(game_id=active_game_id)
 
-        # TODO Async attempt, didnt work?
-        # ref_games = [run_job(active_game_id, submission_id, ref_player['id']) for ref_player in active_ref_submissions]
-        # await asyncio.gather(*ref_games, return_exceptions=True)
-
-        for ref_player in active_ref_submissions:
-            await run_job(active_game_id, submission_id, ref_player['id'])
+        ref_games = [run_job(active_game_id, submission_id, ref_player['id']) for ref_player in active_ref_submissions]
+        await asyncio.gather(*ref_games, return_exceptions=True)
 
         return submission_id
     except Exception as e:
