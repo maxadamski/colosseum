@@ -13,7 +13,7 @@ fi
 
 if ! [ -d "$home/.config/lxc" ]; then
     echo "Making $home/.config/lxc"
-    mkdir "$home/.config/lxc"
+    mkdir -p "$home/.config/lxc"
     chown $SUDO_USER:$SUDO_USER "$home/.config/lxc"
 fi
 

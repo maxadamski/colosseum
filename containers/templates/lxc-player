@@ -1,29 +1,26 @@
 #!/bin/bash
 set -e
 
-rootfs=.
 share="/bin"
 copy=""
 while [ $# -ge 1 ]; do case "$1" in
   --name=*) NAME="${1#*=}";;
-  --path=*) config="${1#*=}/config";; # …/name
-  --rootfs=*) rootfs="${1#*=}";; # …/rootfs
-  --sharedir=*) share="${1#*=}"; share="${share%/}";;
-  --copydir=*) copy="${1#*=}"; copy="${copy%/}";;
-  --mapped-uid) if [ $# -ge 2 ]; then LXCUID="$2"; shift; fi;;
-  --mapped-gid) if [ $# -ge 2 ]; then LXCGRP="$2"; shift; fi;;
+  --path=*) config="${1#*=}/config";;
+  --rootfs=*) rootfs=$(realpath ${1#*=});;
+  --sharedir=*) share="$(realpath ${1#*=})";;
+  --copydir=*) copy="$(realpath ${1#*=})";;
+  --mapped-uid) [ $# -ge 2 ] && LXCUID="$2"; shift;;
+  --mapped-gid) [ $# -ge 2 ] && LXCGRP="$2"; shift;;
   *) echo >&2 "unknown options: '$*'"; exit 2;;
 esac; shift; done
-rootfs="$(realpath $rootfs/$NAME)"
-share="$(realpath $share)"
 
-echo root: $rootfs
-echo share: $share
-echo copy: $copy
+echo "root  = $rootfs"
+echo "share = $share"
+echo "copy  = $copy"
 
-cat ~/.config/lxc/default.conf > "$config"
+cat ~/.config/lxc/default.conf > $config
 
-cat <<EOF >>"$config"
+cat <<EOF >>$config
 # lxc-player
 lxc.rootfs.path = $rootfs
 lxc.uts.name = $NAME
@@ -40,13 +37,13 @@ EOF
 
 mkdir -p $rootfs/{bin,dev,etc,home,lib,proc,root,sbin,sys,tmp,usr,var,share}
 
-touch "$rootfs/etc/fstab"
+touch $rootfs/etc/fstab
 
-cat <<EOF >"$rootfs/etc/passwd"
+cat <<EOF >$rootfs/etc/passwd
 root:x:0:0:root:/root:/bin/bash
 EOF
 
-cat <<EOF >"$rootfs/etc/group"
+cat <<EOF >$rootfs/etc/group
 root:x:0:root
 EOF
 
@@ -54,6 +51,8 @@ EOF
 rm -f $rootfs/root/fifo_{in,out}
 mkfifo -m 666 $rootfs/root/fifo_{in,out}
 
-# copy player data
-cp -r $copy/. $rootfs/root/
+# copy player data if requested
+if [ -n "$copy" ]; then
+	cp -r $copy/. $rootfs/root/
+fi
 
