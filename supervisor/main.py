@@ -83,7 +83,7 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = 
     p2_out = NamedTemporaryFile(delete=True)
     p1 = await lxc_shell(p1_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p1_out, stderr=STDOUT)
     p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
-    judge = await aio_shell(f'files/games/{id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
+    judge = await aio_shell(f'files/games/{game_id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
     try:
         out, err = await aio.wait_for(judge.communicate(), 3*60)
         out = out.decode('utf-8').rstrip()
