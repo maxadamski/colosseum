@@ -133,6 +133,7 @@ async def build_player(id, env_id, data, automake, ref=None):
     base_dir = 'players' if ref is None else os.path.join('games', str(ref), 'refs')
     player_dir = os.path.join('files', base_dir, str(id))
     container_name = f'ref-{id}' if ref else f'player-{id}'
+    home = os.path.join(container_home, container_name)
     if os.path.exists(player_dir): shutil.rmtree(player_dir)
     os.makedirs(player_dir)
 
@@ -145,7 +146,7 @@ async def build_player(id, env_id, data, automake, ref=None):
         with open(os.path.join(player_dir, name), 'wb') as f:
             f.write(content)
 
-    proc = await aio_shell(f'lxc-create -t player -n {container_name} -- --rootfs={container_home} --sharedir={container_share} --copydir={player_dir}', stdout=DEVNULL, stderr=STDOUT)
+    proc = await aio_shell(f'lxc-create -t player -n {container_name} -- --rootfs={home} --sharedir={container_share} --copydir={player_dir}', stdout=DEVNULL, stderr=STDOUT)
     out, _ = await proc.communicate()
     validate_status(proc.returncode)
 
