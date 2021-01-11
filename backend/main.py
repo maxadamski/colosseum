@@ -246,7 +246,8 @@ async def run_job(game_id, submission_id, ref_player_id):
     job_id = db.insert_ref_result(submission_id=submission_id, reference_id=ref_player_id, result='unknown')
     values = {"game_id": game_id,
               "p1_id": submission_id,
-              "p2_id": ref_player_id}
+              "p2_id": ref_player_id,
+              "is_ref": True}
     try:
         async with httpx.AsyncClient() as client:
             response = await client.put(url=f"{supervisor_api}/job/{job_id}", params=values)
@@ -254,7 +255,10 @@ async def run_job(game_id, submission_id, ref_player_id):
         print(f"Error while requesting {exc.request.url!r}.")
         async with httpx.AsyncClient() as client:
             response = await client.get(url=f"{supervisor_api}/job/{job_id}")
+    print(response)
+    print(response.text)
     response_dict = json.loads(response.text)
+    print(response_dict)
     db.update_ref_result(result_id=job_id, result=response_dict['result'],
                          sub_stdout=response_dict['log']['p1'],
                          ref_stdout=response_dict['log']['p2'])
@@ -506,8 +510,8 @@ async def remove_game(id: int, session=Depends(teacher_session)):
 async def activate_game(id: int, session=Depends(teacher_session)):
     #TODO: keep students
     #db.remove_all_students()
-    db.remove_all_teams()
-    db.remove_all_groups()
+    #db.remove_all_teams()
+    #db.remove_all_groups()
     db.remove_all_team_submissions()
     db.remove_all_tournament_results()
     db.remove_all_ref_results()

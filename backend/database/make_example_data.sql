@@ -6,8 +6,6 @@ INSERT INTO groups(name)
 VALUES ('I3-2020');
 
 INSERT INTO environments(name)
-VALUES ('C++');
-INSERT INTO environments(name)
 VALUES ('C11');
 INSERT INTO environments(name)
 VALUES ('Python3');
@@ -72,17 +70,9 @@ INSERT INTO team_invitations(team_id, student_id)
 VALUES (1, 3);
 
 INSERT INTO games(name, description, files_path, deadline, is_active, environment_id)
-VALUES ('Pentago', 'Pentago game for 2 players', 'files/games/1',
+VALUES ('DummyGame', 'Dummy placeholder game', 'files/games/1',
         '2021-01-30', TRUE, 1);
 
 INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
-VALUES ('Random C++', 'files/games/1/submissions/1', 1, 1,
-        1);
-
-INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
-VALUES ('Random Python', 'files/games/1/submissions/2', 2, 1,
-        1);
-
-INSERT INTO ref_submissions(name, files_path, environment_id, teacher_id, game_id)
-VALUES ('Alpha Beta', 'files/games/1/submissions/3', 1, 1,
+VALUES ('Dummy Ref Player', 'files/games/1/submissions/1', 1, 1,
         1);
