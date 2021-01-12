@@ -77,6 +77,9 @@ div
             h2 Sign in
             input(type='text' v-model='loginUser' placeholder='Username')
             input(type='password' v-model='loginPass' placeholder='Password')
+            label.input-checkbox
+                input(type='checkbox')
+                | Remember me
             button(@click='doLogin(loginUser, loginPass)') Sign in
 
     template(v-else)

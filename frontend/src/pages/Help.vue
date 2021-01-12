@@ -42,6 +42,12 @@ export default {
 
             p Rerum vitae velit et fugit maxime. Id ab ut similique. Quasi nostrum unde et. Aut sed omnis voluptate laboriosam ut. Distinctio sed officiis quidem vero quia a. Odit sunt vitae molestias id sunt temporibus quis est.
 
+            pre
+                |int main(int argc, char** argv) { hanusth aositdaoih aistois aoisnthois 
+                |   printf("hello, world!\n");
+                |   return 0;
+                |}
+
 
         h3 Controls
         div.wrap
