@@ -14,8 +14,6 @@ Vue.prototype.$log = console.log
 Vue.use(VueRouter)
 
 Vue.use(SimpleState, {
-    // User role:
-    userType: 'student',
 
     //Public data:
     groups: [
@@ -76,7 +74,7 @@ Vue.use(SimpleState, {
 
 Vue.use(ReactiveStorage, {
     storage: window.localStorage,
-    watch: ['sessionLogin', 'sessionKey', 'sessionExp'],
+    watch: ['sessionLogin', 'sessionKey', 'sessionExp', 'userType'],
 })
 
 Vue.use(SimpleApi, {
@@ -114,7 +112,7 @@ Vue.mixin({
             this.$local.sessionLogin = user
             this.$local.sessionKey = data.key
             this.$local.sessionExp = data.exp
-            this.$s.userType = data.is_teacher ? 'teacher' : 'student'
+            this.$local.userType = data.is_teacher ? 'teacher' : 'student'
         },
         async doLogout() {
             console.log('did logout')
@@ -141,7 +139,7 @@ Vue.mixin({
             }
         },
         async fetchProfile() {
-            if (this.$s.userType === "student") {
+            if (this.$local.userType === "student") {
                 const [userData, userStatus] = await this.safeApi('GET', '/students/me')
                 this.$s.studentId = userData.id
                 this.$s.studentNick = userData.nickname
@@ -193,7 +191,11 @@ new Vue({
     render: f => f(App),
     async created() {
         await this.fetchPublic()
-        if (this.isAuthorized) await this.fetchProfile()
+        if (this.isAuthorized) {
+            await this.fetchProfile()
+        } else {
+            this.$local.userType = "student";
+        }
     }
 })
 

@@ -165,7 +165,7 @@ export default {
 
         nav.tabs(v-if='!isAuthorized')
             button(v-for='x in publicTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
-        nav.tabs(v-else-if='$s.userType == "teacher"')
+        nav.tabs(v-else-if='$local.userType == "teacher"')
             button(v-for='x in teacherTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}
         nav.tabs(v-else)
             button(v-for='x in studentTabs' @click='tab = x' :class='{selected: tab == x}') {{x}}

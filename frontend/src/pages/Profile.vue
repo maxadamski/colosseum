@@ -86,7 +86,7 @@ div
 
         h2 User Profile
 
-        div(v-if='$s.userType == "student"')
+        div(v-if='$local.userType == "student"')
             h3 Basic Information
 
             h4 Nickname
@@ -123,7 +123,7 @@ div
                 button(@click='willDeleteAccount = true') Delete Account
 
 
-        div(v-if='$s.userType == "teacher"')
+        div(v-if='$local.userType == "teacher"')
             h2 Game-Maker Zone
 
             h3 My Games
