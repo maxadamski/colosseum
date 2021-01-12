@@ -3,8 +3,18 @@
 #include <stdio.h>
 #include <assert.h>
 
-#include "pentago.c"
 #include "colosseum.c"
+
+typedef enum {
+    MSG_NONE        = 0,
+    MSG_MAKE_MOVE   = 1,
+    MSG_COMMIT_MOVE = 2,
+    MSG_GET_MOVES   = 3,
+    MSG_UNDO_MOVE   = 4,
+    MSG_GET_WINNER  = 5,
+    MSG_GET_BOARD   = 6,
+    MSG_GET_PLAYER  = 7,
+} PentagoMsg;
 
 int main(int argc, char **argv) {
     srand(time(0));

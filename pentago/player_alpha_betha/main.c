@@ -2,9 +2,24 @@
 #define DEBUG
 #include <stdio.h>
 #include <assert.h>
+#include <stdint.h>
 
-// only included for message tags, the player doesn't have to simulate the game
-#include "pentago.c"
+typedef enum {
+    MSG_NONE        = 0,
+    MSG_MAKE_MOVE   = 1,
+    MSG_COMMIT_MOVE = 2,
+    MSG_GET_MOVES   = 3,
+    MSG_UNDO_MOVE   = 4,
+    MSG_GET_WINNER  = 5,
+    MSG_GET_BOARD   = 6,
+    MSG_GET_PLAYER  = 7,
+} PentagoMsg;
+
+typedef struct {
+    uint8_t i;
+    uint8_t j;
+    uint8_t rotation;
+} PentagoMove;
 
 #include "colosseum.c"
 
