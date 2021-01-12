@@ -6,6 +6,8 @@ export default {
         deleteAccountConfirm: undefined,
         newGroup: null,
         editGroup: null,
+        loginUser: "",
+        loginPass: "",
     }),
     methods: {
         async addGroup(name) {
@@ -68,21 +70,18 @@ export default {
 </script>
 
 <template lang="pug">
-    div
+div
+    template(v-if='!isAuthorized')
+
+        .login-form
+            h2 Sign in
+            input(type='text' v-model='loginUser' placeholder='Username')
+            input(type='password' v-model='loginPass' placeholder='Password')
+            button(@click='doLogin(loginUser, loginPass)') Sign in
+
+    template(v-else)
+
         h2 User Profile
-
-        .debug
-            .hflex.hlist-3
-                label.input-radio
-                    input(type='radio' v-model='$s.userType' value='student')
-                    span Student
-                label.input-radio
-                    input(type='radio' v-model='$s.userType' value='teacher')
-                    span Teacher
-
-            .div
-                button(@click='doLogin') Login
-
 
         div(v-if='$s.userType == "student"')
             h3 Basic Information
@@ -174,6 +173,9 @@ export default {
                     td New group
                     td
                         button(@click='newGroup = "New group"') + Create
+
+        h3 Session Management
+        button(@click='doLogout') Sign out
 </template>
 
 <style lang="stylus" scoped>
@@ -181,5 +183,13 @@ export default {
 
 table > tr > :nth-child(1)
     width 20ch
+
+.login-form
+    vflex center stretch
+    vgap u2
+    max-width 500px
+    margin 0 auto
+    margin-top u4
+
 </style>
 

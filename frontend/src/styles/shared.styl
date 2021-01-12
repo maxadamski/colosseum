@@ -84,6 +84,9 @@ for x, i in units
 .fy-center
     align-items center
 
+.f-items-stretch
+    align-content stretch
+
 .hflex
     display flex
     flex-direction row
@@ -91,7 +94,6 @@ for x, i in units
 .vflex
     display flex
     flex-direction column
-    align-items start
 
 .flex-wrap
     flex-wrap wrap
@@ -111,6 +113,12 @@ vgap(x)
 hflex(justify, align)
     display flex
     flex-direction row
+    justify-content justify
+    align-items align
+
+vflex(justify, align)
+    display flex
+    flex-direction column
     justify-content justify
     align-items align
 

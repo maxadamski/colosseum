@@ -104,19 +104,23 @@ Vue.mixin({
             if (err2) return [null, resp.status] // response body is not JSON (plain text, HTML etc.)
             return [json, resp.status]
         },
-        async doLogin() {
-            const login = this.$s.userType === 'teacher' ? 'teacher' : 'student1'
-            const password = 'pwd'
-            const [data, status] = await this.safeApi('POST', '/login', {login: login, password: password})
+        async doLogin(user, pass) {
+            const [data, status] = await this.safeApi('POST', '/login', {login: user, password: pass})
             if (status != 200) {
                 console.log(`login failed! (status code ${status})`)
                 return
             }
             console.log(`login successful! ${data}`)
-            this.$local.sessionLogin = login
+            this.$local.sessionLogin = user
             this.$local.sessionKey = data.key
             this.$local.sessionExp = data.exp
             this.$s.userType = data.is_teacher ? 'teacher' : 'student'
+        },
+        async doLogout() {
+            console.log('did logout')
+            this.$local.sessionLogin = null
+            this.$local.sessionKey = null
+            this.$local.sessionExp = null
         },
         async fetchPublic() {
             const [groupsData, groupsStatus] = await this.safeApi('GET', `/groups`)
