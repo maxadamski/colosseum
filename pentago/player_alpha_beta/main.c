@@ -83,7 +83,7 @@ typedef struct {
     PentagoMove move;
 } PickResult;
 
-PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha, i32 betha) {
+PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha, i32 beta) {
     assert(max_depth >= 0);
     u8 buf[0x1000];
     i32 i_count, j_count, r_count;
@@ -137,7 +137,7 @@ PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha
             score = get_and_score_board(in, out, player);
         } else {
             char other_p = (player == 'B') ? 'W' : 'B';
-            PickResult pick = pick_best_move(in, out, other_p, max_depth-1, -betha, -alpha);
+            PickResult pick = pick_best_move(in, out, other_p, max_depth-1, -beta, -alpha);
             score = -pick.score;
         }
 
@@ -149,7 +149,7 @@ PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha
 
         mping(out, MSG_UNDO_MOVE);
 
-        if (alpha >= betha) return result;
+        if (alpha >= beta) return result;
     }
     return result;
 }
