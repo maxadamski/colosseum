@@ -30,14 +30,16 @@ i32 score_board(char *board, i32 size, char player) {
         char color = 0;
         i32 in_a_row = 0;
         for (i32 j = 0; j < size; j++) {
+            i32 mul = (player == color) ? 1 : -(color != '.');
+            result += 3 * mul * (i % (size/2) == size/4);
+            result += 3 * mul * (j % (size/2) == size/4);
             char f = board[size*i + j];
             if (f == color) {
                 in_a_row++;
-                i32 mul = (player == color) ? 1 : -(color != '.');
                 if (in_a_row >= size/2 + 2)
                     result += 1000 * mul;
                 else
-                    result += in_a_row * in_a_row * mul;
+                    result += in_a_row * in_a_row * in_a_row * mul;
             } else {
                 in_a_row = 1;
                 color = f;
@@ -48,14 +50,14 @@ i32 score_board(char *board, i32 size, char player) {
         char color = 0;
         i32 in_a_row = 0;
         for (i32 j = 0; j < size; j++) {
+            i32 mul = (player == color) ? 1 : -(color != '.');
             char f = board[size*j + i];
             if (f == color) {
                 in_a_row++;
-                i32 mul = (player == color) ? 1 : -(color != '.');
                 if (in_a_row >= size/2 + 2)
                     result += 1000 * mul;
                 else
-                    result += in_a_row * in_a_row * mul;
+                    result += in_a_row * in_a_row * in_a_row * mul;
             } else {
                 in_a_row = 1;
                 color = f;
@@ -83,6 +85,15 @@ typedef struct {
     PentagoMove move;
 } PickResult;
 
+void shuffle(i32 *tab, i32 count) {
+    for (i32 i = 0; i < count; i++) {
+        i32 pick = (rand() % (count-i)) + i;
+        i32 temp = tab[i];
+        tab[i] = tab[pick];
+        tab[pick] = temp;
+    }
+}
+
 PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha, i32 beta) {
     assert(max_depth >= 0);
     u8 buf[0x1000];
@@ -102,13 +113,16 @@ PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha
             j, &j_count,
             r, &r_count);
     assert(i_count == j_count && j_count == r_count);
-    //printf("max_depth %d got %d moves\n", max_depth, i_count);
+
+    i32 moves[1024];
+    for (i32 it = 0; it < i_count; it++)  moves[it] = it; 
+    shuffle(moves, i_count);
 
     PickResult result;
     result.move = (PentagoMove){i[0], j[0], r[0]};
     result.score = -1000000;
-    for (i32 move = 0; move < i_count; move++) {
-        //printf("testing move (%u, %u) %u\n", i[move], j[move], r[move]);
+    for (i32 index = 0; index < i_count; index++) {
+        i32 move = moves[index];
         msendf(out, MSG_MAKE_MOVE, "%u %u %u", i[move], j[move], r[move]);
 
         // check if the current move wins
@@ -144,7 +158,7 @@ PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha
         if (score > result.score) {
             result.score = score;
             result.move = (PentagoMove){i[move], j[move], r[move]};
-            alpha = score;
+            alpha = (score > alpha) ? score : alpha;
         }
 
         mping(out, MSG_UNDO_MOVE);
@@ -175,7 +189,7 @@ int main(int argc, char **argv) {
     u8 r[1024];
 
     while (1) {
-        PickResult pick = pick_best_move(in, out, player, 3, INT32_MIN, INT32_MAX);
+        PickResult pick = pick_best_move(in, out, player, 2, -1000, 1000);
         PentagoMove m = pick.move;
         printf("%c picked (%u, %u) %u with score %d\n", player, m.i, m.j, m.rotation, pick.score);
         msendf(out, MSG_COMMIT_MOVE, "%u %u %u", m.i, m.j, m.rotation);

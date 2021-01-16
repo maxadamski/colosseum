@@ -39,7 +39,6 @@ int main(int argc, char **argv) {
         assert(i_count == j_count && j_count == r_count);
 
         u32 move = rand() % i_count;
-        //res = msendf(out, MSG_COMMIT_MOVE, "%u %u %u", 1, 2, ROTATION_TOP_LEFT_CW);
         res = msendf(out, MSG_COMMIT_MOVE, "%u %u %u", i[move], j[move], r[move]);
     }
 }
