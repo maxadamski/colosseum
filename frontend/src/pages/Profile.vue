@@ -3,12 +3,22 @@ export default {
     name: 'Profile',
     data: () => ({
         willDeleteAccount: false,
-        deleteAccountConfirm: undefined,
+        deleteAccountConfirm: null,
         newGroup: null,
         editGroup: null,
         loginUser: "",
         loginPass: "",
+        signupType: null,
+        signupUser: null,
+        signupPass1: null,
+        signupPass2: null,
     }),
+    computed: {
+        canCreateAccount() {
+            return this.signupUser !== null && this.signupPass1 !== null &&
+                this.signupType !== null && this.signupPass1 === this.signupPass2
+        }
+    },
     methods: {
         async addGroup(name) {
             this.$s.groups.push({id: -1, name: name})
@@ -62,7 +72,14 @@ export default {
             if (this.deleteAccountConfirm !== 'I want to delete my account') return
             this.willDeleteAccount = false;
             await this.safeApi('DELETE', `/students/me`)
-            this.logOut()
+            await this.doLogout()
+        },
+        async createAccount() {
+            const path = this.signupType === 'teacher' ? '/teachers' : '/students'
+            let data = {login: this.signupUser, password: this.signupPass1}
+            if (this.signupType === 'student') data.nickname = data.login
+            const [response, result] = await this.safeApi('POST', path, data)
+            this.signupUser = this.signupPass1 = this.signupPass2 = this.signupType = null
         },
     }
 
@@ -80,13 +97,14 @@ div
             label.input-checkbox
                 input(type='checkbox')
                 | Remember me
-            button(@click='doLogin(loginUser, loginPass)') Sign in
+            button(@click='doLogin(loginUser, loginPass); loginUser = loginPass = null') Sign in
 
     template(v-else)
 
-        h2 User Profile
 
-        div(v-if='$local.userType == "student"')
+        h2 My Profile
+
+        template(v-if='$local.userType == "student"')
             h3 Basic Information
 
             h4 Nickname
@@ -117,15 +135,13 @@ div
 
                 p If you don&#39;t want to delete your account, click "Cancel".
 
-                button(@click='deleteAccountConfirm = undefined; willDeleteAccount = false') Cancel
+                button(@click='deleteAccountConfirm = null; willDeleteAccount = false') Cancel
 
             div(v-else)
                 button(@click='willDeleteAccount = true') Delete Account
 
 
-        div(v-if='$local.userType == "teacher"')
-            h2 Game-Maker Zone
-
+        template(v-if='$local.userType == "teacher"')
             h3 My Games
 
             table
@@ -177,6 +193,21 @@ div
                     td
                         button(@click='newGroup = "New group"') + Create
 
+            h3 Account Management
+            .register-form
+                input(type='text' v-model='signupUser' placeholder='Username')
+                input(type='password' v-model='signupPass1' placeholder='Password')
+                input(type='password' v-model='signupPass2' placeholder='Repeat Password')
+                .hlist-3
+                    label.input-checkbox
+                        input(type='radio' value='student' v-model='signupType')
+                        | Student
+                    label.input-checkbox
+                        input(type='radio' value='teacher' v-model='signupType')
+                        | Teacher
+
+                button(:disabled='!canCreateAccount' @click='createAccount') Create
+
         h3 Session Management
         button(@click='doLogout') Sign out
 </template>
@@ -193,6 +224,11 @@ table > tr > :nth-child(1)
     max-width 500px
     margin 0 auto
     margin-top u4
+
+.register-form
+    vflex center stretch
+    vgap u2
+    max-width 400px
 
 </style>
 

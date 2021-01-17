@@ -113,6 +113,7 @@ Vue.mixin({
             this.$local.sessionKey = data.key
             this.$local.sessionExp = data.exp
             this.$local.userType = data.is_teacher ? 'teacher' : 'student'
+            await this.fetchProfile()
         },
         async doLogout() {
             console.log('did logout')
