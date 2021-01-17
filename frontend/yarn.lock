@@ -5815,6 +5815,11 @@ void-elements@^2.0.1:
   resolved "https://registry.yarnpkg.com/void-elements/-/void-elements-2.0.1.tgz#c066afb582bb1cb4128d60ea92392e94d5e9dbec"
   integrity sha1-wGavtYK7HLQSjWDqkjkulNXp2+w=
 
+vue-easy-toast@^1.0.5:
+  version "1.0.5"
+  resolved "https://registry.yarnpkg.com/vue-easy-toast/-/vue-easy-toast-1.0.5.tgz#c2b5064b7b0e0b69500c9f38b0c63ff1a151e0b7"
+  integrity sha512-Tx7TNn19wAbaqvreJMrYrlTwMtHMyaEoG/ISfmFQ4ABWdyB4qphU+eialiOSpGbRFg5w61cBGBkVy3lyJroOPw==
+
 vue-feather-icons@^5.0.0:
   version "5.1.0"
   resolved "https://registry.yarnpkg.com/vue-feather-icons/-/vue-feather-icons-5.1.0.tgz#db658aca5f4c088c2f725f8b1f2967d4a1e4d398"
@@ -5845,7 +5850,7 @@ vue-template-es2015-compiler@^1.9.0:
   resolved "https://registry.yarnpkg.com/vue-template-es2015-compiler/-/vue-template-es2015-compiler-1.9.1.tgz#1ee3bc9a16ecbf5118be334bb15f9c46f82f5825"
   integrity sha512-4gDntzrifFnCEvyoO8PqyJDmguXgVPxKiIxrBKjIowvL9l+N66196+72XVYR8BBf1Uv1Fgt3bGevJ+sEmxfZzw==
 
-vue@^2.0.0:
+vue@2.x:
   version "2.6.12"
   resolved "https://registry.yarnpkg.com/vue/-/vue-2.6.12.tgz#f5ebd4fa6bd2869403e29a896aed4904456c9123"
   integrity sha512-uhmLFETqPPNyuLLbsKz6ioJ4q7AZHzD8ZVFNATNyICSZouqP2Sz0rotWQC8UNBF6VGSCs5abnKJoStA6JbCbfg==

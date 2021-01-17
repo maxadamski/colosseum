@@ -1,3 +1,5 @@
+import { unwrap } from "./common"
+
 export const SimpleState = {
     install(Vue, state) {
         Vue.util.defineReactive(Vue.prototype, '$s', state)
@@ -20,12 +22,12 @@ export const ReactiveStorage = {
 
 export const SimpleApi = {
     install(Vue, options) {
-        Vue.prototype.$api = async (method = 'GET', path = '', data = null) => {
+        Vue.prototype.$api = (method = 'GET', path = '', data = null) => {
             const url = options.base + path
             const login = options.getLogin()
             const token = options.getToken()
 
-            const args = {
+            let args = {
                 method: method,
                 mode: 'cors',
                 credentials: 'same-origin',
@@ -37,11 +39,12 @@ export const SimpleApi = {
                 },
             }
 
-            if (method !== 'GET') {
-                args['body'] = typeof data === 'object' && data !== null && !(data instanceof FormData) ? JSON.stringify(data) : data
+            if (method !== 'GET' && data !== null) {
+                if (typeof data === 'object' && !(data instanceof FormData)) data = JSON.stringify(data)
+                args['body'] = data
             }
 
-            return fetch(url, args).then(res => [res, null]).catch(err => [null, err])
+            return unwrap(fetch(url, args))
         }
     }
 }
