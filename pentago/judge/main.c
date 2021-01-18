@@ -13,7 +13,7 @@
 
 typedef struct timespec timespec;
 
-inline timespec get_time() {
+timespec get_time() {
     timespec temp;
     //clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &temp);
     clock_gettime(CLOCK_MONOTONIC, &temp);
@@ -32,9 +32,17 @@ timespec time_diff(timespec start, timespec end) {
     return temp;
 }
 
-inline bool time_less_than(timespec a, timespec b) {
+bool time_less_than(timespec a, timespec b) {
     timespec res = time_diff(a, b);
     return res.tv_sec < 0 || res.tv_nsec < 0;
+}
+
+timespec time_from_ms(i32 ms) {
+    timespec result = {
+        .tv_sec  = ms / 1000000,
+        .tv_nsec = 1000 * (ms % 1000000)
+    };
+    return result;
 }
 
 typedef struct {
@@ -50,7 +58,7 @@ typedef enum {
     PLAYER_TIMEOUT = 2,
 } HandlePlayerResult;
 
-HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
+HandlePlayerResult handle_player(Player *p, Pentago *game, i32 timeout) {
     int in  = p->in;
     int out = p->out;
 
@@ -62,19 +70,25 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
     p->game.board_size = game->board_size;
     arrsetlen(p->stack, 0);
 
+    timespec time_move_max = time_from_ms(timeout);
+    timespec time_move_start = get_time();
+
     bool done = false;
     while (!done) {
         i8 tag;
         u8 buffer[0x1000] = {};
         i32 received = mrecv(out, &tag, buffer, 0x1000);
-        // TODO(piotr): check whether the received size matches the tag
-        // TODO(piotr): check timeout
 
         switch (tag) {
             case MSG_COMMIT_MOVE: {
                 u8 i, j, rotation;
                 mscanf(buffer, "%u %u %u", &i, &j, &rotation);
                 eprintf("Player %c: (%u, %u) %u\n", game->current_player, i, j, rotation);
+
+                timespec time_move_end = get_time();
+                timespec time_move = time_diff(time_move_start, time_move_end);
+                eprintf("Took %d.%09d seconds\n", time_move.tv_sec, time_move.tv_nsec);
+
                 PentagoError err = make_move(game, i, j, rotation);
                 if (err) {
                     eprintf("MSG_COMMIT_MOVE error %d\n", err);
@@ -125,7 +139,6 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
             case MSG_GET_BOARD: {
                 i32 res = msendf(in, MSG_GET_BOARD, "%u[%,%]", p->game.board,
                         p->game.board_size, p->game.board_size);
-                //eprintf("sending board, sent %d bytes\n", res);
             } break;
 
             case MSG_GET_PLAYER: {
@@ -139,7 +152,7 @@ HandlePlayerResult handle_player(Player *p, Pentago *game, f32 timeout) {
 
 int main(int argc, char **argv) {
     if (argc != 7) {
-        eprintf("usage: player/1/in player/1/out player/2/in player/2/out board_size timeout\n");
+        eprintf("usage: player/1/in player/1/out player/2/in player/2/out board_size timeout_ms\n");
         return 1;
     }
     int p1_in  = open(argv[1], O_WRONLY);
@@ -147,10 +160,10 @@ int main(int argc, char **argv) {
     int p2_in  = open(argv[3], O_WRONLY);
     int p2_out = open(argv[4], O_RDONLY);
     u8 board_size = atoi(argv[5]);
-    f32 timeout = atof(argv[6]);
-    eprintf("board_size: %d\ntimeout: %f\n", (i32)board_size, timeout);
+    i32 timeout = atoi(argv[6]);
+    eprintf("board_size: %d\ntimeout: %d ms\n", (i32)board_size, timeout);
 
-    // TODO(piotr): check the arguments
+    // TODO(piotr): more robust checking on arguments
 
     Pentago game;
     PentagoError err = pentago_create(&game, board_size);
@@ -166,7 +179,6 @@ int main(int argc, char **argv) {
     Player p1 = {p1_in, p1_out, p1_game, NULL};
     Player p2 = {p2_in, p2_out, p2_game, NULL};
 
-    // TODO(piotr): handle illegal behavior correctly
     HandlePlayerResult res;
     while (!game.winner) {
         res = handle_player(&p1, &game, timeout);
@@ -183,6 +195,5 @@ int main(int argc, char **argv) {
             break;
         }
     }
-    // TODO(piotr): print result correctly
     printf("WINNER %c\n", game.winner);
 }

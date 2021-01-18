@@ -158,8 +158,8 @@ PickResult pick_best_move(int in, int out, char player, int max_depth, i32 alpha
         if (score > result.score) {
             result.score = score;
             result.move = (PentagoMove){i[move], j[move], r[move]};
-            alpha = (score > alpha) ? score : alpha;
         }
+        alpha = (score > alpha) ? score : alpha;
 
         mping(out, MSG_UNDO_MOVE);
 
@@ -172,6 +172,14 @@ int main(int argc, char **argv) {
     srand(time(0));
     int in  = open(argv[1], O_RDONLY);
     int out = open(argv[2], O_WRONLY);
+
+    i32 max_depth = 3;
+    for (i32 i = 3; i < argc; i++) {
+        if (0 == strcmp(argv[i], "--depth")) {
+            assert(argc > i+1);
+            max_depth = atoi(argv[++i]);
+        }
+    }
 
     u8 buf[0x1000];
 
@@ -189,7 +197,7 @@ int main(int argc, char **argv) {
     u8 r[1024];
 
     while (1) {
-        PickResult pick = pick_best_move(in, out, player, 2, -1000, 1000);
+        PickResult pick = pick_best_move(in, out, player, max_depth-1, -1000, 1000);
         PentagoMove m = pick.move;
         printf("%c picked (%u, %u) %u with score %d\n", player, m.i, m.j, m.rotation, pick.score);
         msendf(out, MSG_COMMIT_MOVE, "%u %u %u", m.i, m.j, m.rotation);

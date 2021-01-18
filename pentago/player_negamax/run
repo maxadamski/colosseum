@@ -10,6 +10,15 @@ inf = float('inf')
 make_move, commit_move, get_moves, undo_move, get_winner, get_board, get_player = range(1, 8)
 fi, fo = co.open(argv[1], 'r'), co.open(argv[2], 'w')
 
+max_depth = 2
+i = 3
+while i < len(argv):
+    if argv[i] == "--depth":
+        assert len(argv) > i+1, 'expected a value after --depth'
+        max_depth = int(argv[i+1])
+        i += 1
+    i += 1
+
 def send(tag, *args):
     co.send(fo, tag, *args)
 
@@ -61,5 +70,5 @@ def negamax(depth, alpha=-inf, beta=+inf):
 
 board_size = call(get_board).shape[0]
 while True:
-    (i, j, r), score = negamax(depth=2)
+    (i, j, r), score = negamax(depth=max_depth)
     send(commit_move, (i,u8), (j,u8), (r,u8))
