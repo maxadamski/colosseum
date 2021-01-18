@@ -218,8 +218,8 @@ async def invite_to_team(team_id: int, nickname: str, session=Depends(student_se
     invited_student = db.get_student_by_nickname(nickname=nickname)
     if db.get_student_by_nickname(nickname=nickname) is None:
         raise NOT_FOUND
-    if db.get_team_member(team_id=team_id, student_id=student_id) or \
-            db.get_team_invitations(team_id=team_id, student_id=student_id):
+    if db.get_team_member(team_id=team_id, student_id=invited_student['id']) or \
+            db.get_team_invitation(team_id=team_id, student_id=invited_student['id']):
         raise CONFLICT
     return db.invite_student_to_team(student_id=invited_student['id'], team_id=student_team['id'])
 
