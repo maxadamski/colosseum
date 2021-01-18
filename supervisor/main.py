@@ -11,6 +11,7 @@ from redis import Redis
 from passlib.hash import sha256_crypt
 from shutil import unpack_archive
 from tempfile import NamedTemporaryFile
+from secrets import token_hex
 from asyncio.subprocess import PIPE, STDOUT, DEVNULL
 aio_shell = aio.create_subprocess_shell
 aio_exec = aio.create_subprocess_exec
@@ -78,6 +79,12 @@ async def get_job(id: int):
 @app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = False):
     p1_name, p2_name = f'player-{p1_id}', f'ref-{p2_id}' if is_ref else f'player-{p2_id}'
+    if is_ref:
+        temp_name = f'{p2_name}-{token_hex(16)}'
+        proc = await aio_exec('lxc-copy', '-n', p2_name, '-N', temp_name)
+        result = await proc.wait()
+        if result != 0: raise HTTPException(500)
+        p2_name = temp_name
     fifos = ' '.join(f'containers/{x}/root/fifo_{y}' for x in [p1_name,p2_name] for y in ['in','out'])
     p1_out = NamedTemporaryFile(delete=True)
     p2_out = NamedTemporaryFile(delete=True)
@@ -97,6 +104,7 @@ async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = 
     if p2.returncode is None: p2.kill()
     p1_out.seek(0)
     p2_out.seek(0)
+    if is_ref: await aio_exec('lxc-destroy', '-n', p2_name)
 
     response = dict(status='done', result=result, log=dict(judge=err, p1=p1_out.read(), p2=p2_out.read()))
     p1_out.close()
