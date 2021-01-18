@@ -9,12 +9,17 @@ FROM ref_submissions
 WHERE id = :submission_id;
 
 -- :name get_team_submissions :many
+WITH results AS (SELECT submission_id,
+                        round((count(result) FILTER (WHERE result = 'WINNER 1')) * 1.0 / count(result) * 100) AS result
+                 FROM ref_results
+                 GROUP BY submission_id
+)
 SELECT s.id,
-       to_char(s.submission_time, 'DD/MM/YYYY HH24:MI:SS') AS date,
-       e.name                                              AS env,
+       to_char(s.submission_time, 'DD/MM/YYYY HH24:MI:SS')               AS date,
+       e.name                                                            AS env,
        s.status,
-       s.is_primary                                        AS "primary",
-       0                                                   AS score
+       s.is_primary                                                      AS "primary",
+       (SELECT result FROM results WHERE submission_id = s.id) AS score
 FROM team_submissions s
          JOIN environments e ON s.environment_id = e.id
 WHERE s.team_id = :team_id;
@@ -59,6 +64,11 @@ WHERE id = :submission_id;
 -- :name update_team_submission_path
 UPDATE team_submissions
 SET files_path = :files_path
+WHERE id = :submission_id;
+
+-- :name update_team_submission_status
+UPDATE team_submissions
+SET status = :status
 WHERE id = :submission_id;
 
 -- :name remove_team_submission

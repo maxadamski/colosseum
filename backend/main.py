@@ -275,7 +275,8 @@ async def create_student_team_submission(is_automake: bool = Body(...),
     student_team = db.get_student_team(student_id=student_id)
     submission_id = db.insert_team_submission(is_automake=is_automake,
                                               environment_id=environment_id,
-                                              team_id=student_team['id'])
+                                              team_id=student_team['id'],
+                                              status='submitted')
 
     submission_dir = get_submission_directory(submission_id, init=True)
 
@@ -301,7 +302,7 @@ async def create_student_team_submission(is_automake: bool = Body(...),
 
         ref_games = [run_job(active_game_id, submission_id, ref_player['id']) for ref_player in active_ref_submissions]
         await asyncio.gather(*ref_games, return_exceptions=True)
-
+        db.update_team_submission_status(submission_id=submission_id, status='graded')
         return submission_id
     except Exception as e:
         remove_dir(submission_dir)
