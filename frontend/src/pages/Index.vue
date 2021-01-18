@@ -49,19 +49,11 @@ export default {
         },
         async changeTeamName() {
             const [teamPatch, teamPatchStatus] = await this.safeApi('PATCH', `/teams/${this.$s.teamId}`, JSON.stringify({new_name: this.$s.teamName}))
-            if (teamPatchStatus === 403) {
-                console.log(`You are not the leader! (status code ${studentTeamStatus})`)
-                const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
-                this.$s.teamName = studentTeam.name
-            } else if (teamPatchStatus === 422) {
-                console.log(`Team name cannot be empty or have more than 50 characters (status code ${studentTeamStatus})`)
-                const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
-                this.$s.teamName = studentTeam.name
-            } else if (teamPatchStatus === 409) {
-                console.log(`Team with that name already exists (status code ${studentTeamStatus})`)
-                const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
-                this.$s.teamName = studentTeam.name
-            }
+            if (teamPatchStatus === 403) this.$toast('Only the leader can invite students!')
+            else if (teamPatchStatus === 422) this.$toast('Team name must have between 1 and 50 characters')
+            else if (teamPatchStatus === 409) this.$toast('Team with that name already exists')
+            const [studentTeam, studentTeamStatus] = await this.safeApi('GET', '/students/me/team')
+            this.$s.teamName = studentTeam.name
         },
 
         async acceptTeamInvitation(invitationId, index) {
@@ -85,16 +77,11 @@ export default {
 
         async inviteStudent() {
             const [invitedStudent, invitedStudentStatus] = await this.safeApi('POST', `/teams/${this.$s.teamId}/invitations/${this.invitedStudent}`)
-            if (invitedStudentStatus === 403) {
-                console.log(`You are not the leader! (status code ${invitedStudentStatus})`)
-            } else if (invitedStudentStatus === 404) {
-                console.log(`No such student! (status code ${invitedStudentStatus})`)
-            } else if (invitedStudentStatus === 409) {
-                console.log(`Student already in team or invited! (status code ${invitedStudentStatus})`)
-            } else {
-                const [studentTeamInvitations, studentTeamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
-                this.$s.teamInvitations = studentTeamInvitations
-            }
+            if (invitedStudentStatus === 403) this.$toast('Only the leader can invite students!')
+            else if (invitedStudentStatus === 404) this.$toast('Student with the given nickname does not exist')
+            else if (invitedStudentStatus === 409) this.$toast('You already invited this student')
+            const [studentTeamInvitations, studentTeamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
+            this.$s.teamInvitations = studentTeamInvitations
         },
 
         async leaveTeam() {

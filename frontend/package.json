@@ -26,7 +26,8 @@
     },
     "dependencies": {
         "@babel/runtime-corejs2": "^7.10.3",
-        "vue": "^2.0.0",
+        "vue": "2.x",
+        "vue-easy-toast": "^1.0.5",
         "vue-router": "^3.1.6"
     },
     "scripts": {

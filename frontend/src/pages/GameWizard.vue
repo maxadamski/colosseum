@@ -62,15 +62,13 @@ export default {
                 for (const i in this.players) {
                     if (this.players[i].id !== -1) {
                         const refPlayerForm = new FormData()
-                        refPlayerForm.append('name', this.players[i].name)
+                        const name = this.players[i].name
+                        refPlayerForm.append('name', name)
                         refPlayerForm.append('executables', this.players[i].file)
                         refPlayerForm.append('environment_id', this.$s.envs.find(env => env.name === this.players[i].env).id)
                         const [refPlayer, refPlayerStatus] = await this.safeApi('POST', `/games/${gamePost}/ref_submissions`, refPlayerForm)
-                        if (refPlayerStatus === 415) {
-                            console.log(`Bad extension! (status conde ${refPlayerStatus})`)
-                        } else if (refPlayerStatus === 413) {
-                            console.log(`Bad size! (status conde ${refPlayerStatus})`)
-                        }
+                        if (refPlayerStatus === 415) this.$toast(`Bad file extension of player ${name}`)
+                        if (refPlayerStatus === 413) this.$toast(`Code archive for player ${name} is too big`)
                     }
                 }
                 this.$s.games.push({name: this.name, active: false, id: gamePost})
@@ -83,38 +81,27 @@ export default {
             gameForm.append('description', this.subtitle)
             gameForm.append('deadline', this.deadline)
 
-            if (this.resources[0].file) {
-                gameForm.append('overview', this.resources[0].file)
-            }
-            if (this.resources[1].file) {
-                gameForm.append('rules', this.resources[1].file)
-            }
-            if (this.resources[2].file) {
-                gameForm.append('widget', this.resources[2].file)
-            }
+            if (this.resources[0].file) gameForm.append('overview', this.resources[0].file)
+            if (this.resources[1].file) gameForm.append('rules', this.resources[1].file)
+            if (this.resources[2].file) gameForm.append('widget', this.resources[2].file)
 
             const [gamePatch, gamePatchStatus] = await this.safeApi('PATCH', `/games/${this.editGame}`, gameForm)
 
-            if (gamePatch === 415) {
-                console.log(`Bad extension! (status conde ${gamePatch})`)
-            } else if (gamePatch === 413) {
-                console.log(`Bad size! (status conde ${gamePatch})`)
-            } else if (gamePatch === 409) {
-                console.log(`Game with that name already exists (status code ${gamePatch})`)
-            } else {
-                for (const i in this.$s.games) {
-                    if (this.$s.games[i].id.toString() === this.editGame) {
-                        this.$s.games[i].name = this.name
-                        break
-                    }
+            if (gamePatch === 415) this.$toast('Bad file extension')
+            if (gamePatch === 413) this.$toast('Bad file size')
+            if (gamePatch === 409) this.$toast('Game with that name already exists')
+            for (const i in this.$s.games) {
+                if (this.$s.games[i].id.toString() === this.editGame) {
+                    this.$s.games[i].name = this.name
+                    break
                 }
-
-                if (this.editGame === this.$s.game.id.toString()) {
-                    const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
-                    this.$s.game = gameData
-                }
-                await this.$router.push({path: '/profile'})
             }
+
+            if (this.editGame === this.$s.game.id.toString()) {
+                const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
+                this.$s.game = gameData
+            }
+            await this.$router.push({path: '/profile'})
 
         }
     },

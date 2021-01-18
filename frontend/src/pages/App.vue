@@ -21,7 +21,6 @@ export default {
                 router-link(v-for='tab in tabs' :to='tab.url') {{tab.name}}
         main
             router-view
-
         footer
             img(src='../static/logo.png')
             small &copy; Copyright 2020
@@ -30,6 +29,14 @@ export default {
 
 <style lang="stylus">
 @import "../styles/basic.styl"
+@import "../styles/shared.styl"
+
+.et-wrapper
+    left 50% !important
+    transform translateX(-50%) !important
+    top u3 !important
+    background #555 !important
+    opacity 0.9
 </style>
 
 <style lang="stylus" scoped>

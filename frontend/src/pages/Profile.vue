@@ -21,12 +21,12 @@ export default {
     },
     methods: {
         async addGroup(name) {
-            this.$s.groups.push({id: -1, name: name})
-            const [groupData, groupStatus] = await this.safeApi('POST', `/groups`, JSON.stringify({name: name}))
+            const [groupData, groupStatus] = await this.safeApi('POST', `/groups`, {name: name})
             if (groupStatus === 409) {
-                console.log(`Group with that name already exists (status code ${groupStatus})`)
-                this.$s.groups.pop()
+                this.$toast('A group with that name already exists')
+                return
             }
+            await this.fetchGroups()
         },
         async updateGroup(group) {
             for (const i in this.$s.groups) {
@@ -36,13 +36,14 @@ export default {
                         this.$s.groups[i].name = group.name
                         const [groupData, groupStatus] = await this.safeApi('PATCH', `/groups/${group.id}`, JSON.stringify({name: group.name}))
                         if (groupStatus === 409) {
-                            console.log(`Group with that name already exists (status code ${groupStatus})`)
+                            this.$toast('A group with that name already exists')
                             this.$s.groups[i].name = oldName
                         }
                     }
                     break
                 }
             }
+            await this.fetchGroups()
         },
         async activateGame(gameId) {
             await this.safeApi('POST', `/games/activate/${gameId}`)
@@ -58,12 +59,12 @@ export default {
         async changeStudentNickname() {
             const [teamPatch, teamPatchStatus] = await this.safeApi('PATCH', `/students/me`, JSON.stringify({nickname: this.$s.studentNick}))
             if (teamPatchStatus === 422) {
-                console.log(`Nickname cannot be empty or have more than 50 characters (status code ${teamPatchStatus})`)
+                this.$toast('Nickname cannot be empty or have more than 50 characters')
                 const [userData, userStatus] = await this.safeApi('GET', '/students/me')
                 this.$s.studentNick = userData.nickname
             }
             if (teamPatchStatus === 409) {
-                console.log(`Nickname already taken (status code ${teamPatchStatus})`)
+                this.$toast('Nickname already taken')
                 const [userData, userStatus] = await this.safeApi('GET', '/students/me')
                 this.$s.studentNick = userData.nickname
             }
@@ -117,12 +118,9 @@ div
                 select(v-model='$s.studentGroup')
                     option(disabled :value='null') Click to select
                     option(v-for='group in $s.groups' :value='group.id') {{ group.name }}
-                button(@click="safeApi('PATCH', `/students/me`, JSON.stringify({group_id: $s.studentGroup}))") Save
+                button(@click="safeApi('PATCH', `/students/me`, {group_id: $s.studentGroup})") Save
 
             h3 Account Actions
-
-            h4 Danger Zone
-
 
             div(v-if='willDeleteAccount')
                 p To delete your account, type "I want to delete my account" below and click "Confirm".
