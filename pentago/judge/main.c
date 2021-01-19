@@ -195,5 +195,9 @@ int main(int argc, char **argv) {
             break;
         }
     }
-    printf("WINNER %c\n", game.winner);
+    if (game.winner == 'D') {
+        printf("DRAW\n");
+    } else {
+        printf("WINNER %d\n", (game.winner == 'W') ? 1 : 2);
+    }
 }

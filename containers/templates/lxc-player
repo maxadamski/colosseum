@@ -47,12 +47,11 @@ cat <<EOF >$rootfs/etc/group
 root:x:0:root
 EOF
 
+# copy player data if requested
+if [ -n "$copy" ]; then
+    cp -r $copy/. $rootfs/root/
+fi
+
 # set up colosseum channels
 rm -f $rootfs/root/fifo_{in,out}
 mkfifo -m 666 $rootfs/root/fifo_{in,out}
-
-# copy player data if requested
-if [ -n "$copy" ]; then
-	cp -r $copy/. $rootfs/root/
-fi
-

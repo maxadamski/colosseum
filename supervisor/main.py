@@ -50,14 +50,18 @@ async def lxc_shell(name, cmd, **kwargs):
 def lxc_gen_name(name):
     return f'{name}-{token_hex(16)}'
 
-async def lxc_clone(name, temp_name):
-    proc = await aio_exec('lxc-copy', '-n', name, '-N', temp_name)
-    status = await proc.wait()
-    if status != 0:
-        raise Exception(f"Could not clone container {name} as {temp_name} (status code {status})")
+async def lxc_clone(name, new_name):
+    player_dir = os.path.join(container_home, name, 'root')
+    home = os.path.join(container_home, new_name)
+    proc = await aio_shell(f'lxc-create -t player -n {new_name} -- --rootfs={home} --sharedir={container_share} --copydir={player_dir}', stdout=DEVNULL, stderr=STDOUT)
+    out, _ = await proc.communicate()
+    
+    if proc.returncode != 0:
+        raise HTTPException(500, dict(error='Container clone failed', code=proc.returncode, log=out))
 
 async def lxc_destroy(name):
-    await aio_exec('lxc-destroy', '-n', name)
+    proc = await aio_exec('lxc-destroy', '-f', '-n', name)
+    await proc.wait()
 
 # init before fork
 
