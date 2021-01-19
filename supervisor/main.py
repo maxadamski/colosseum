@@ -171,14 +171,14 @@ async def build_player(id, env_id, data, automake, ref=None):
             f.write(content)
 
     proc = await aio_shell(f'lxc-create -t player -n {container_name} -- --rootfs={home} --sharedir={container_share} --copydir={player_dir}', stdout=DEVNULL, stderr=STDOUT)
-    out, _ = await aio.wait_for(proc.communicate(), MAX_BUILD_TIME)
+    out, _ = await proc.communicate()
     validate_status(proc.returncode)
 
     # TODO: handle automake
 
     if os.path.exists(os.path.join('containers', container_name, 'root', 'build')):
         proc = await lxc_shell(container_name, 'export PATH && cd root && chmod +x build && ./build', stdout=PIPE, stderr=STDOUT)
-        out, _ = await proc.communicate()
+        out, _ = await aio.wait_for(proc.communicate(), MAX_BUILD_TIME)
         validate_status(proc.returncode)
     return dict(log=out)
 
