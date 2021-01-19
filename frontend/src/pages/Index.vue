@@ -120,11 +120,11 @@ export default {
             },)
             const [submissionPost, submissionPostStatus] = await this.safeApi('POST', `/teams/me/submissions`, submissionForm)
             if (submissionPostStatus === 415) {
-                this.submitError = `Bad extension! (status code ${submissionPostStatus})`
+                this.$toast("Unsupported file extesion")
             } else if (submissionPostStatus === 413) {
-                this.submitError = `Bad size! (status code ${submissionPostStatus}`
+                this.$toast("File too large")
             } else if (submissionPostStatus === 403) {
-                this.submitError = `Forbidden! (status code ${submissionPostStatus})`
+                this.$toast("Submission rate is limited to 1 per 3 minutes")
             } else {
                 const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
                 this.$s.teamSubmissions = teamSubmissions
