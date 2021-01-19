@@ -10,3 +10,6 @@ name = "colosseumdb"
 [servers.alpha]
 url = "http://localhost:8001"
 token = "password"
+
+[files]
+mb_limit = 10
