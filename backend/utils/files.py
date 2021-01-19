@@ -1,6 +1,7 @@
 import os
 import shutil
 import markdown
+import toml
 
 from typing import IO
 from tempfile import NamedTemporaryFile
@@ -20,13 +21,15 @@ SUBMISSIONS_DIR = os.path.join(FILES_DIR, 'submissions')
 BAD_SIZE = HTTPException(413, 'Entity Too Large')
 BAD_EXTENSION = HTTPException(415, 'Wrong File Extension')
 
+config = toml.load('config.toml')
+MB_LIMIT = config['files']['mb_limit']
 
-def read_file_limited(file, mb_limit=100):
+def read_file_limited(file):
     real_file_size = 0
     temp: IO = NamedTemporaryFile(delete=False)
     for chunk in file.file:
         real_file_size += len(chunk)
-        if real_file_size > mb_limit * 1000000:
+        if real_file_size > MB_LIMIT * 1000000:
             os.unlink(temp.name)
             raise BAD_SIZE
         temp.write(chunk)
