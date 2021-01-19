@@ -31,7 +31,10 @@ export default {
     },
     methods: {
         updateCountdown() {
-            if (this.$s.game.deadline === null) return
+            if (this.$s.game.deadline === null) {
+                this.countdown = ''
+                return
+            }
             const dt = datediff(now(), this.$s.game.deadline)
             let res = ''
             const plural = (x) => x == 1 ? '' : 's'
@@ -110,22 +113,21 @@ export default {
             submissionForm.append('executables', this.submissionFile)
             submissionForm.append('environment_id', this.submitEnv)
             submissionForm.append('is_automake', this.isAutomake)
-            this.$s.teamSubmissions.unshift({
-                date: new Date().toLocaleDateString(),
-                env: this.submitEnv,
-                status: "submitted",
-                score: "-",
-                id: '',
-                primary: false
-            },)
-            const [submissionPost, submissionPostStatus] = await this.safeApi('POST', `/teams/me/submissions`, submissionForm)
-            if (submissionPostStatus === 415) {
+            const [submissionPost, submissionStatus] = await this.safeApi('POST', `/teams/me/submissions`, submissionForm)
+            if (submissionStatus === 415) {
                 this.$toast("Unsupported file extesion")
-            } else if (submissionPostStatus === 413) {
+            } else if (submissionStatus === 413) {
                 this.$toast("File too large")
-            } else if (submissionPostStatus === 403) {
+            } else if (submissionStatus === 403) {
                 this.$toast("Submission rate is limited to 1 per 3 minutes")
+            } else if (submissionStatus !== 200) {
+                this.$toast("Something went wrong. Please try again later...")
             } else {
+                this.$s.teamSubmissions.unshift({
+                    date: new Date().toLocaleDateString(),
+                    env: this.submitEnv, status: "submitted",
+                    score: "-", id: '', primary: false
+                })
                 const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
                 this.$s.teamSubmissions = teamSubmissions
             }
