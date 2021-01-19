@@ -16,6 +16,9 @@ from asyncio.subprocess import PIPE, STDOUT, DEVNULL
 aio_shell = aio.create_subprocess_shell
 aio_exec = aio.create_subprocess_exec
 
+MAX_BUILD_TIME = 1*60
+MAX_RUN_TIME = 3*60
+
 def validate_status(code):
     if code != 0:
         raise HTTPException(500, dict(error='Build failed', code=code))
@@ -44,12 +47,14 @@ def unpack_data(data, dst_dir, ext):
 async def lxc_shell(name, cmd, **kwargs):
     return await aio_exec('lxc-execute', '-n', name, '--', 'sh', '-c', cmd, **kwargs)
 
-async def lxc_temp_clone(name):
-    temp_name = f'{name}-{token_hex(16)}'
+def lxc_gen_name(name):
+    return f'{name}-{token_hex(16)}'
+
+async def lxc_clone(name, temp_name):
     proc = await aio_exec('lxc-copy', '-n', name, '-N', temp_name)
-    result = await proc.wait()
-    if result != 0: raise HTTPException(500)
-    return temp_name
+    status = await proc.wait()
+    if status != 0:
+        raise Exception(f"Could not clone container {name} as {temp_name} (status code {status})")
 
 async def lxc_destroy(name):
     await aio_exec('lxc-destroy', '-n', name)
@@ -89,37 +94,36 @@ async def get_job(id: int):
 @app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = False):
     p1_original, p2_original = f'player-{p1_id}', f'ref-{p2_id}' if is_ref else f'player-{p2_id}'
+    p1_name, p2_name = lxc_gen_name(p1_original), lxc_gen_name(p2_original)
     try:
-        p1_name = await lxc_temp_clone(p1_original)
+        await lxc_clone(p1_original, p1_name)
+        await lxc_clone(p2_original, p2_name)
+        fifos = ' '.join(f'containers/{x}/root/fifo_{y}' for x in [p1_name,p2_name] for y in ['in','out'])
+        p1_out = NamedTemporaryFile(delete=True)
+        p2_out = NamedTemporaryFile(delete=True)
+        p1 = await lxc_shell(p1_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p1_out, stderr=STDOUT)
+        p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
+        judge = await aio_shell(f'files/games/{game_id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
         try:
-            p2_name = await lxc_temp_clone(p2_original)
-            fifos = ' '.join(f'containers/{x}/root/fifo_{y}' for x in [p1_name,p2_name] for y in ['in','out'])
-            p1_out = NamedTemporaryFile(delete=True)
-            p2_out = NamedTemporaryFile(delete=True)
-            p1 = await lxc_shell(p1_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p1_out, stderr=STDOUT)
-            p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
-            judge = await aio_shell(f'files/games/{game_id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
-            try:
-                out, err = await aio.wait_for(judge.communicate(), 3*60)
-                out = out.decode('utf-8').rstrip()
-                result = out.split('\n')[-1]
-            except aio.TimeoutError:
-                result = 'TIMEOUT'
-                out, err = '', ''
-            job_status[id] = dict(status='in progress', result='UNKNOWN', log=dict(judge='', p1='', p2=''))
+            out, err = await aio.wait_for(judge.communicate(), MAX_RUN_TIME)
+            out = out.decode('utf-8').rstrip()
+            result = out.split('\n')[-1]
+        except aio.TimeoutError:
+            result = 'TIMEOUT'
+            out, err = '', ''
+        job_status[id] = dict(status='in progress', result='UNKNOWN', log=dict(judge='', p1='', p2=''))
 
-            if p1.returncode is None: p1.kill()
-            if p2.returncode is None: p2.kill()
-            p1_out.seek(0)
-            p2_out.seek(0)
+        if p1.returncode is None: p1.kill()
+        if p2.returncode is None: p2.kill()
+        p1_out.seek(0)
+        p2_out.seek(0)
 
-            response = dict(status='done', result=result, log=dict(judge=err, p1=p1_out.read(), p2=p2_out.read()))
-            p1_out.close()
-            p2_out.close()
-        finally:
-            await lxc_destroy(p2_name)
+        response = dict(status='done', result=result, log=dict(judge=err, p1=p1_out.read(), p2=p2_out.read()))
+        p1_out.close()
+        p2_out.close()
     finally:
         await lxc_destroy(p1_name)
+        await lxc_destroy(p2_name)
 
     job_status[id] = response
     if not re.match(r'DRAW|(ILLEGAL|TIMEOUT|WINNER) [12]', result):
@@ -167,7 +171,7 @@ async def build_player(id, env_id, data, automake, ref=None):
             f.write(content)
 
     proc = await aio_shell(f'lxc-create -t player -n {container_name} -- --rootfs={home} --sharedir={container_share} --copydir={player_dir}', stdout=DEVNULL, stderr=STDOUT)
-    out, _ = await proc.communicate()
+    out, _ = await aio.wait_for(proc.communicate(), MAX_BUILD_TIME)
     validate_status(proc.returncode)
 
     # TODO: handle automake
