@@ -44,6 +44,16 @@ def unpack_data(data, dst_dir, ext):
 async def lxc_shell(name, cmd, **kwargs):
     return await aio_exec('lxc-execute', '-n', name, '--', 'sh', '-c', cmd, **kwargs)
 
+async def lxc_temp_clone(name):
+    temp_name = f'{name}-{token_hex(16)}'
+    proc = await aio_exec('lxc-copy', '-n', name, '-N', temp_name)
+    result = await proc.wait()
+    if result != 0: raise HTTPException(500)
+    return temp_name
+
+async def lxc_destroy(name):
+    await aio_exec('lxc-destroy', '-n', name)
+
 # init before fork
 
 print('INFO reading configuration file')
@@ -78,37 +88,39 @@ async def get_job(id: int):
 
 @app.put('/job/{id}')
 async def new_job(id: int, game_id: int, p1_id: int, p2_id: int, is_ref: bool = False):
-    p1_name, p2_name = f'player-{p1_id}', f'ref-{p2_id}' if is_ref else f'player-{p2_id}'
-    if is_ref:
-        temp_name = f'{p2_name}-{token_hex(16)}'
-        proc = await aio_exec('lxc-copy', '-n', p2_name, '-N', temp_name)
-        result = await proc.wait()
-        if result != 0: raise HTTPException(500)
-        p2_name = temp_name
-    fifos = ' '.join(f'containers/{x}/root/fifo_{y}' for x in [p1_name,p2_name] for y in ['in','out'])
-    p1_out = NamedTemporaryFile(delete=True)
-    p2_out = NamedTemporaryFile(delete=True)
-    p1 = await lxc_shell(p1_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p1_out, stderr=STDOUT)
-    p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
-    judge = await aio_shell(f'files/games/{game_id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
+    p1_original, p2_original = f'player-{p1_id}', f'ref-{p2_id}' if is_ref else f'player-{p2_id}'
     try:
-        out, err = await aio.wait_for(judge.communicate(), 3*60)
-        out = out.decode('utf-8').rstrip()
-        result = out.split('\n')[-1]
-    except aio.TimeoutError:
-        result = 'TIMEOUT'
-        out, err = '', ''
-    job_status[id] = dict(status='in progress', result='UNKNOWN', log=dict(judge='', p1='', p2=''))
+        p1_name = await lxc_temp_clone(p1_original)
+        try:
+            p2_name = await lxc_temp_clone(p2_original)
+            fifos = ' '.join(f'containers/{x}/root/fifo_{y}' for x in [p1_name,p2_name] for y in ['in','out'])
+            p1_out = NamedTemporaryFile(delete=True)
+            p2_out = NamedTemporaryFile(delete=True)
+            p1 = await lxc_shell(p1_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p1_out, stderr=STDOUT)
+            p2 = await lxc_shell(p2_name, 'export PATH && cd root && chmod +x run && ./run fifo_in fifo_out', stdout=p2_out, stderr=STDOUT)
+            judge = await aio_shell(f'files/games/{game_id}/judge/run {fifos} 6 30', stdout=PIPE, stderr=PIPE)
+            try:
+                out, err = await aio.wait_for(judge.communicate(), 3*60)
+                out = out.decode('utf-8').rstrip()
+                result = out.split('\n')[-1]
+            except aio.TimeoutError:
+                result = 'TIMEOUT'
+                out, err = '', ''
+            job_status[id] = dict(status='in progress', result='UNKNOWN', log=dict(judge='', p1='', p2=''))
 
-    if p1.returncode is None: p1.kill()
-    if p2.returncode is None: p2.kill()
-    p1_out.seek(0)
-    p2_out.seek(0)
-    if is_ref: await aio_exec('lxc-destroy', '-n', p2_name)
+            if p1.returncode is None: p1.kill()
+            if p2.returncode is None: p2.kill()
+            p1_out.seek(0)
+            p2_out.seek(0)
 
-    response = dict(status='done', result=result, log=dict(judge=err, p1=p1_out.read(), p2=p2_out.read()))
-    p1_out.close()
-    p2_out.close()
+            response = dict(status='done', result=result, log=dict(judge=err, p1=p1_out.read(), p2=p2_out.read()))
+            p1_out.close()
+            p2_out.close()
+        finally:
+            await lxc_destroy(p2_name)
+    finally:
+        await lxc_destroy(p1_name)
+
     job_status[id] = response
     if not re.match(r'DRAW|(ILLEGAL|TIMEOUT|WINNER) [12]', result):
         raise HTTPException(500, dict(error='Invalid judge output', result=result))
