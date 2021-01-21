@@ -250,8 +250,9 @@ async def run_job(game_id, submission_id, ref_player_id):
               "is_ref": True}
     try:
         async with httpx.AsyncClient() as client:
-            response = await client.put(url=f"{supervisor_api}/job/{job_id}", params=values)
+            response = await client.put(url=f"{supervisor_api}/job/{job_id}", params=values, timeout=240)
     except httpx.HTTPError as exc:
+        print(exc)
         print(f"Error while requesting {exc.request.url!r}.")
         async with httpx.AsyncClient() as client:
             response = await client.get(url=f"{supervisor_api}/job/{job_id}")
