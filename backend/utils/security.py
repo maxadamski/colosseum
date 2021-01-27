@@ -1,10 +1,12 @@
 import secrets
+import toml
 from passlib.hash import argon2, sha256_crypt
 from fastapi import HTTPException
 from utils.time import *
 
-LOGIN_TIMEOUT = 24  # in hours
-SUBMISSION_TIME_LIMIT = 3  # in minutes
+config = toml.load('config.toml')
+LOGIN_TIMEOUT = config['security']['login_timeout']
+SUBMISSION_TIME_LIMIT = config['security']['submission_time_limit']
 
 BAD_REQUEST = HTTPException(400, 'Malformed request')
 BAD_LOGIN = HTTPException(403, 'Incorrect username or password')

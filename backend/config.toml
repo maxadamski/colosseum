@@ -12,4 +12,13 @@ url = "http://localhost:8001"
 token = "password"
 
 [files]
-mb_limit = 10
+mb_limit = 10  # in megabytes
+widget_ext = ['.html']
+overview_ext = ['.md']
+rules_ext = ['.md']
+game_exec_ext = ['.zip', '.py', '.cpp', '.c']
+submission_exec_ext = ['.zip', '.py', '.cpp', '.c']
+
+[security]
+login_timeout = 24  # in hours
+submission_time_limit = 3  # in minutes

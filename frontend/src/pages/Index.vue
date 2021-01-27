@@ -74,7 +74,7 @@ export default {
             const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
             this.$s.teamInvitations = studentTeamInvitations
 
-            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
+            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/me/submissions`)
             this.$s.teamSubmissions = teamSubmissions
         },
 
@@ -101,7 +101,7 @@ export default {
             const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${this.$s.teamId}/invitations`)
             this.$s.teamInvitations = studentTeamInvitations
 
-            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
+            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/me/submissions`)
             this.$s.teamSubmissions = teamSubmissions
         },
 
@@ -128,7 +128,7 @@ export default {
                     env: this.submitEnv, status: "submitted",
                     score: "-", id: '', primary: false
                 })
-                const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${this.$s.teamId}/submissions`)
+                const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/me/submissions`)
                 this.$s.teamSubmissions = teamSubmissions
             }
         },
@@ -166,7 +166,7 @@ export default {
             div(v-html='$s.game.rules')
 
         div(v-if='tab == "play"' v-once)
-            iframe.widget(:src='`${apiUrl}/games/${$s.game.id}/widget`')
+            iframe.widget(:src='`${apiUrl}/games/active/widget`')
 
 
         div(v-if='tab == "team" && isAuthorized')

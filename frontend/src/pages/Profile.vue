@@ -51,8 +51,6 @@ export default {
             this.$s.groups = groupsData
             const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
             this.$s.game = gameData
-            const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
-            this.$s.refPlayers = refPlayers
             const [gamesData, gamesStatus] = await this.safeApi('GET', `/games`)
             this.$s.games = gamesData
         },

@@ -8,12 +8,6 @@ from tempfile import NamedTemporaryFile
 from fastapi import HTTPException
 from pathlib import Path
 
-widget_ext = ['.html']
-overview_ext = ['.md']
-rules_ext = ['.md']
-game_exec_ext = ['.zip', '.py', '.cpp', '.c']
-submission_exec_ext = ['.zip', '.py', '.cpp', '.c']
-
 FILES_DIR = os.path.join(os.getcwd(), 'files')
 GAMES_DIR = os.path.join(FILES_DIR, 'games')
 SUBMISSIONS_DIR = os.path.join(FILES_DIR, 'submissions')
@@ -23,6 +17,11 @@ BAD_EXTENSION = HTTPException(415, 'Wrong File Extension')
 
 config = toml.load('config.toml')
 MB_LIMIT = config['files']['mb_limit']
+WIDGET_EXT = config['files']['widget_ext']
+OVERVIEW_EXT = config['files']['overview_ext']
+RULES_EXT = config['files']['rules_ext']
+GAME_EXEC_EXT = config['files']['game_exec_ext']
+SUBMISSION_EXEC_EXT = config['files']['submission_exec_ext']
 
 def read_file_limited(file):
     real_file_size = 0

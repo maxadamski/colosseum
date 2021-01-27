@@ -28,7 +28,6 @@ Vue.use(SimpleState, {
         overview: 'Loading...',
         rules: 'Loading...',
     },
-    refPlayers: [],
     studentGroup: 1,
     studentId: 1,
     studentNick: 'Nickname',
@@ -105,9 +104,6 @@ Vue.mixin({
             const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
             this.$s.game = gameData
             this.$s.game.deadline = new Date(gameData.deadline)
-
-            const [refPlayers, refPlayersStatus] = await this.safeApi('GET', `/games/${gameData.id}/ref_submissions`)
-            this.$s.refPlayers = refPlayers
         },
         async fetchGroups() {
             const [groups, groupsStatus] = await this.safeApi('GET', `/groups`)
@@ -133,7 +129,7 @@ Vue.mixin({
             const [studentTeamInvitations, teamInvitationsStatus] = await this.safeApi('GET', `/team/${studentTeam.id}/invitations`)
             this.$s.teamInvitations = studentTeamInvitations
 
-            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/${studentTeam.id}/submissions`)
+            const [teamSubmissions, teamSubmissionsStatus] = await this.safeApi('GET', `/teams/me/submissions`)
             this.$s.teamSubmissions = teamSubmissions
         },
         async fetchTeacher() {
