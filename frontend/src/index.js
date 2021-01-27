@@ -7,7 +7,7 @@ import {now, unwrap} from './common.js'
 import Toast from 'vue-easy-toast'
 
 const develApiUrl = 'http://localhost:8000'
-const finalApiUrl = 'https://colosseum.put.poznan.pl/api'
+const finalApiUrl = develApiUrl
 const apiUrl = process.env.NODE_ENV === 'development' ? develApiUrl : finalApiUrl
 
 Vue.prototype.$log = console.log
@@ -111,6 +111,10 @@ Vue.mixin({
         },
         async fetchStudent() {
             const [userData, userStatus] = await this.safeApi('GET', '/students/me')
+            if (userStatus === 403 || gamesStatus === 500) {
+                await this.doLogout()
+                return
+            }
             this.$s.studentId = userData.id
             this.$s.studentNick = userData.nickname
             this.$s.studentGroup = userData.group_id
@@ -134,6 +138,10 @@ Vue.mixin({
         },
         async fetchTeacher() {
             const [gamesData, gamesStatus] = await this.safeApi('GET', `/games`)
+            if (gamesStatus === 403 || gamesStatus === 500) {
+                await this.doLogout()
+                return
+            }
             this.$s.games = gamesData
         },
         async fetchProfile() {
