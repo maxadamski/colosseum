@@ -87,22 +87,25 @@ export default {
 
             const [gamePatch, gamePatchStatus] = await this.safeApi('PATCH', `/games/${this.editGame}`, gameForm)
 
-            if (gamePatch === 415) this.$toast('Bad file extension')
-            if (gamePatch === 413) this.$toast('Bad file size')
-            if (gamePatch === 409) this.$toast('Game with that name already exists')
-            for (const i in this.$s.games) {
-                if (this.$s.games[i].id.toString() === this.editGame) {
-                    this.$s.games[i].name = this.name
-                    break
+            if (gamePatchStatus === 415) this.$toast('Bad file extension')
+            if (gamePatchStatus === 413) this.$toast('Bad file size')
+            if (gamePatchStatus === 409) this.$toast('Game with that name already exists')
+            if (gamePatchStatus === 422) this.$toast('Bad game name or subtitle length')
+
+            if (gamePatchStatus === 200) {
+                for (const i in this.$s.games) {
+                    if (this.$s.games[i].id.toString() === this.editGame) {
+                        this.$s.games[i].name = this.name
+                        break
+                    }
                 }
-            }
 
-            if (this.editGame === this.$s.game.id.toString()) {
-                const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
-                this.$s.game = gameData
+                if (this.editGame === this.$s.game.id.toString()) {
+                    const [gameData, gameStatus] = await this.safeApi('GET', '/games/active')
+                    this.$s.game = gameData
+                }
+                await this.$router.push({path: '/profile'})
             }
-            await this.$router.push({path: '/profile'})
-
         }
     },
     async mounted() {

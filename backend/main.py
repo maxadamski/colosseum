@@ -20,7 +20,7 @@ import asyncio
 app = FastAPI()
 
 app.add_middleware(CORSMiddleware,
-                   allow_origins=['*'],
+                   allow_origins=['http://localhost:1234'],
                    allow_methods=['*'],
                    allow_headers=['*'],
                    )
@@ -107,7 +107,7 @@ async def login(user: UserLogin):
 
 
 @app.post('/students')
-async def create_student(student: StudentPost):
+async def create_student(student: StudentPost, session=Depends(teacher_session)):
     login, password, nickname, group_id = student.login, student.password, student.nickname, student.group_id
     hashed = hashed_password(password)
     return db.insert_student(login=login, password=hashed, nickname=nickname, group_id=group_id)
@@ -176,12 +176,12 @@ async def leave_student_team(session=Depends(student_session)):
 
 
 @app.get('/team/{id}/members')
-async def get_team_members(id: int):
+async def get_team_members(id: int, session=Depends(student_session)):
     return db.get_team_members(team_id=id)
 
 
 @app.get('/team/{id}/invitations')
-async def get_student_team_invitations(id: int):
+async def get_student_team_invitations(id: int, session=Depends(student_session)):
     return db.get_team_invitations(team_id=id)
 
 
@@ -237,9 +237,11 @@ async def cancel_team_invite(team_id: int, student_id: int, session=Depends(stud
 # Student team submissions endpoints
 #
 
-@app.get('/teams/{id}/submissions')
-async def get_team_submissions(id: int, session=Depends(student_session)):
-    return db.get_team_submissions(team_id=id)
+@app.get('/teams/me/submissions')
+async def get_team_submissions(session=Depends(student_session)):
+    student_id = session['user_id']
+    team_id = db.get_student_team(student_id=student_id)['id']
+    return db.get_team_submissions(team_id=team_id)
 
 
 async def run_job(game_id, submission_id, ref_player_id):
@@ -257,7 +259,6 @@ async def run_job(game_id, submission_id, ref_player_id):
         async with httpx.AsyncClient() as client:
             response = await client.get(url=f"{supervisor_api}/job/{job_id}")
     print(response)
-    print(response.text)
     response_dict = json.loads(response.text)
     print(response_dict)
     db.update_ref_result(result_id=job_id, result=response_dict['result'],
@@ -282,7 +283,7 @@ async def create_student_team_submission(is_automake: bool = Body(...),
     submission_dir = get_submission_directory(submission_id, init=True)
 
     try:
-        save_file(submission_dir, executables, 'player', submission_exec_ext)
+        save_file(submission_dir, executables, 'player', SUBMISSION_EXEC_EXT)
         db.update_team_submission_path(submission_id=submission_id, files_path=submission_dir)
         update_submission_time(student_sessions, session['login'])
 
@@ -328,25 +329,10 @@ async def choose_student_team_primary_submission(id: int, session=Depends(studen
 #
 
 @app.post('/teachers')
-async def create_teacher(teacher: TeacherPost):
+async def create_teacher(teacher: TeacherPost, session=Depends(teacher_session)):
     login, password = teacher.login, teacher.password
     hashed = hashed_password(password)
     return db.insert_teacher(login=login, password=hashed)
-
-
-@app.get('/teachers/me')
-async def read_teacher(session=Depends(teacher_session)):
-    return db.get_teacher(teacher_id=session['user_id'])
-
-
-@app.patch('/teachers/me')
-async def update_teacher(data: TeacherPatch, session=Depends(teacher_session)):
-    new_login, new_password = data.login, data.password
-    teacher_id = session['user_id']
-    hashed = hashed_password(new_password) if new_password is not None else None
-    db.update_teacher(teacher_id=teacher_id, new_login=new_login, new_password=hashed)
-    if new_login is not None or new_password is not None:
-        delete_session(teacher_sessions, session['login'])
 
 
 #
@@ -359,20 +345,6 @@ async def get_environments():
 
 
 #
-# Reference player results endpoints
-#
-
-@app.get('/submissions/{id}/results/ref')
-async def get_submission_ref_results(id: int, session=Depends(student_session)):
-    student_id = session['user_id']
-    student_team = db.get_student_team(student_id=student_id)
-    submission = db.get_team_submission(submission_id=id)
-    if submission['team_id'] != student_team['id']:
-        raise FORBIDDEN
-    return db.get_ref_results(submission_id=id)
-
-
-#
 # Group endpoints
 #
 
@@ -382,14 +354,15 @@ async def get_groups():
 
 
 @app.post('/groups')
-async def create_group(name: str = Body(..., embed=True), session=Depends(teacher_session)):
+async def create_group(name: str = Body(..., max_length=20, embed=True), session=Depends(teacher_session)):
     if db.get_group_by_name(name=name):
         raise CONFLICT
     return db.insert_group(name=name)
 
 
 @app.patch('/groups/{id}')
-async def update_group_name(id: int, name: str = Body(..., embed=True), session=Depends(teacher_session)):
+async def update_group_name(id: int, name: str = Body(..., max_length=20, embed=True),
+                            session=Depends(teacher_session)):
     if db.get_group_by_name(name=name):
         raise CONFLICT
     db.update_group(group_id=id, name=name)
@@ -421,11 +394,16 @@ async def get_active_game():
         raise NOT_FOUND
 
 
-@app.get('/games/{id}/widget')
-async def get_active_game_widget(id: int):
-    with open(os.path.join(GAMES_DIR, f'{id}/widget.html'), "r") as input_file:
-        text = input_file.read()
-    return HTMLResponse(content=text, status_code=200)
+@app.get('/games/active/widget')
+async def get_active_game_widget():
+    game = db.get_active_game()
+    if game:
+        id = game["id"]
+        with open(os.path.join(GAMES_DIR, f'{id}/widget.html'), "r") as input_file:
+            text = input_file.read()
+        return HTMLResponse(content=text, status_code=200)
+    else:
+        raise NOT_FOUND
 
 
 @app.get('/games/{id}')
@@ -434,7 +412,7 @@ async def get_game(id: int, session=Depends(teacher_session)):
 
 
 @app.post('/games')
-async def create_game(name: str = Body(...), description: str = Body(...),
+async def create_game(name: str = Body(..., max_length=50), description: str = Body(..., max_length=100),
                       environment_id: int = Body(...), deadline: date = Body(...),
                       executables: UploadFile = File(...),
                       widget: UploadFile = File(...),
@@ -451,10 +429,10 @@ async def create_game(name: str = Body(...), description: str = Body(...),
     game_dir = get_game_directory(game_id, init=True)
 
     try:
-        save_file(game_dir, widget, 'widget', widget_ext)
-        save_file(game_dir, overview, 'overview', overview_ext)
-        save_file(game_dir, rules, 'rules', rules_ext)
-        save_file(game_dir, executables, 'judge', game_exec_ext)
+        save_file(game_dir, widget, 'widget', WIDGET_EXT)
+        save_file(game_dir, overview, 'overview', OVERVIEW_EXT)
+        save_file(game_dir, rules, 'rules', RULES_EXT)
+        save_file(game_dir, executables, 'judge', GAME_EXEC_EXT)
 
         db.update_game_path(game_id=game_id, files_path=game_dir)
 
@@ -473,7 +451,7 @@ async def create_game(name: str = Body(...), description: str = Body(...),
 
 
 @app.patch('/games/{id}')
-async def update_game(id: int, name: str = Body(None), description: str = Body(None),
+async def update_game(id: int, name: str = Body(None, max_length=50), description: str = Body(None, max_length=100),
                       environment_id: int = Body(None), deadline: Optional[date] = Body(None),
                       widget: Optional[UploadFile] = File(None),
                       overview: Optional[UploadFile] = File(None),
@@ -489,13 +467,13 @@ async def update_game(id: int, name: str = Body(None), description: str = Body(N
     game_dir = get_game_directory(id, init=True)
 
     if widget:
-        save_file(game_dir, widget, 'widget', widget_ext)
+        save_file(game_dir, widget, 'widget', WIDGET_EXT)
 
     if overview:
-        save_file(game_dir, overview, 'overview', overview_ext)
+        save_file(game_dir, overview, 'overview', OVERVIEW_EXT)
 
     if rules:
-        save_file(game_dir, rules, 'rules', rules_ext)
+        save_file(game_dir, rules, 'rules', RULES_EXT)
 
 
 @app.delete('/games/{id}')
@@ -509,11 +487,12 @@ async def remove_game(id: int, session=Depends(teacher_session)):
 
 
 @app.post('/games/activate/{id}')
-async def activate_game(id: int, session=Depends(teacher_session)):
-    #TODO: keep students
-    #db.remove_all_students()
-    #db.remove_all_teams()
-    #db.remove_all_groups()
+async def activate_game(id: int, remove_students: Optional[bool] = Body(False, embed=True),
+                        session=Depends(teacher_session)):
+    if remove_students:
+        db.remove_all_students()
+        db.remove_all_teams()
+        db.remove_all_groups()
     db.remove_all_team_submissions()
     db.remove_all_tournament_results()
     db.remove_all_ref_results()
@@ -522,15 +501,11 @@ async def activate_game(id: int, session=Depends(teacher_session)):
     return db.activate_game(game_id=id)
 
 
-@app.get('/games/{game_id}/ref_submissions')
-async def get_game_reference_submissions(game_id: int):
-    return db.get_game_ref_submissions(game_id=game_id)
-
-
-@app.post('/games/{game_id}/ref_submissions')
-async def create_game_reference_submission(game_id: int, name: str = Body(...),
+@app.post('/games/{id}/ref_submissions')
+async def create_game_reference_submission(id: int, name: str = Body(..., max_length=50),
                                            environment_id: int = Body(...),
                                            executables: UploadFile = File(...), session=Depends(teacher_session)):
+    game_id = id
     teacher_id = session['user_id']
     submission_id = db.insert_game_ref_submission(name=name,
                                                   environment_id=environment_id,
@@ -539,7 +514,7 @@ async def create_game_reference_submission(game_id: int, name: str = Body(...),
     submission_dir = get_game_submission_directory(game_id, submission_id, init=True)
 
     try:
-        save_file(submission_dir, executables, 'player', submission_exec_ext)
+        save_file(submission_dir, executables, 'player', SUBMISSION_EXEC_EXT)
         db.update_ref_submission_path(submission_id=submission_id, files_path=submission_dir)
 
         files = {"data": (
@@ -551,7 +526,6 @@ async def create_game_reference_submission(game_id: int, name: str = Body(...),
             print(f"Sending ref_submission {submission_id} for game {game_id}...")
             response = await client.put(url=f"{supervisor_api}/ref_player/{submission_id}", files=files, data=values)
             print(f"supervisor response for ref_submission {submission_id} for game {game_id}: {response.text}")
-        # TODO react to the response from the supervisor
 
         return submission_id
     except Exception as e:

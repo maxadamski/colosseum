@@ -21,18 +21,17 @@ def string_strip_validator(field: str) -> classmethod:
 
 
 class UserLogin(BaseModel):
-    login: str
-    password: str
+    login: str = Field(..., max_length=50)
+    password: str = Field(..., max_length=50)
 
     check_strings: classmethod = string_strip_validator('*')
 
 
 class StudentPost(BaseModel):
-    login: str
-    password: str
-    nickname: str
+    login: str = Field(..., max_length=50)
+    password: str = Field(..., max_length=50)
+    nickname: str = Field(..., max_length=50)
     group_id: Optional[int] = None
-
     check_strings: classmethod = string_strip_validator('*')
 
 
@@ -44,14 +43,7 @@ class StudentPatch(BaseModel):
 
 
 class TeacherPost(BaseModel):
-    login: str
-    password: str
-
-    check_strings: classmethod = string_strip_validator('*')
-
-
-class TeacherPatch(BaseModel):
-    login: Optional[str] = None
-    password: Optional[str] = None
+    login: str = Field(..., max_length=50)
+    password: str = Field(..., max_length=50)
 
     check_strings: classmethod = string_strip_validator('*')
