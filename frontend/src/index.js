@@ -111,7 +111,7 @@ Vue.mixin({
         },
         async fetchStudent() {
             const [userData, userStatus] = await this.safeApi('GET', '/students/me')
-            if (userStatus === 403 || gamesStatus === 500) {
+            if (userStatus === 403) {
                 await this.doLogout()
                 return
             }

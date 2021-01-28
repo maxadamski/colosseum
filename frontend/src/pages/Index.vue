@@ -258,10 +258,7 @@ export default {
                     .hflex.hlist-1
                         button(@click="sendSubmission()" :disabled='!submissionFile || !submitEnv || !isAutomake') Submit
 
-
-            p(v-if='submitError' style='color: red') {{submitError}}
-
-
+                        
             h3 My Submissions
             table.submission-table(v-if='$s.teamSubmissions.length > 0')
                 tr
