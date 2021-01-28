@@ -12,6 +12,7 @@ export default {
         signupUser: null,
         signupPass1: null,
         signupPass2: null,
+        willCreateAccount: false,
     }),
     computed: {
         canCreateAccount() {
@@ -79,8 +80,13 @@ export default {
             const path = this.signupType === 'teacher' ? '/teachers' : '/students'
             let data = {login: this.signupUser, password: this.signupPass1}
             if (this.signupType === 'student') data.nickname = data.login
-            const [response, result] = await this.safeApi('POST', path, data)
+            const [response, status] = await this.safeApi('POST', path, data)
+            this.$toast(status == 200 ? 'Created user' : `Error (status code ${status})`)
+            this.endCreateAccount()
+        },
+        endCreateAccount() {
             this.signupUser = this.signupPass1 = this.signupPass2 = this.signupType = null
+            this.willCreateAccount = false
         },
     }
 
@@ -120,28 +126,8 @@ div
                     option(v-for='group in $s.groups' :value='group.id') {{ group.name }}
                 button(@click="safeApi('PATCH', `/students/me`, {group_id: $s.studentGroup})") Save
 
-            h3 Account Actions
-
-            div(v-if='willDeleteAccount')
-                p To delete your account, type "I want to delete my account" below and click "Confirm".
-
-                p <u>This operation will delete all your data and is irreversible!</u>
-
-                .hcombo
-                    input(type='text' placeholder='Type here...' v-model='deleteAccountConfirm')
-                    button(@click='deleteAccount' :disabled='deleteAccountConfirm !== "I want to delete my account"') Confirm
-
-                p If you don&#39;t want to delete your account, click "Cancel".
-
-                button(@click='deleteAccountConfirm = null; willDeleteAccount = false') Cancel
-
-            div(v-else)
-                button(@click='willDeleteAccount = true') Delete Account
-
-
         template(v-if='$local.userType == "teacher"')
             h3 My Games
-
             table
                 tr
                     th Game
@@ -191,8 +177,10 @@ div
                     td
                         button(@click='newGroup = "New group"') + Create
 
-            h3 Account Management
-            .register-form
+        h3 Account Management
+        template(v-if='$local.userType == "teacher"')
+            h4 Create Account
+            .register-form(v-if='willCreateAccount')
                 input(type='text' v-model='signupUser' placeholder='Username')
                 input(type='password' v-model='signupPass1' placeholder='Password')
                 input(type='password' v-model='signupPass2' placeholder='Repeat Password')
@@ -205,9 +193,34 @@ div
                         | Teacher
 
                 button(:disabled='!canCreateAccount' @click='createAccount') Create
+                button(@click='endCreateAccount') Cancel
 
-        h3 Session Management
+            div(v-else)
+                button(@click='willCreateAccount = true') Create Account
+
+
+        h4 Delete Account
+
+        div(v-if='willDeleteAccount')
+            p To delete your account, type "I want to delete my account" below and click "Confirm".
+
+            p <u>This operation will delete all your data and is irreversible!</u>
+
+            .hcombo
+                input(type='text' placeholder='Type here...' v-model='deleteAccountConfirm')
+                button(@click='deleteAccount' :disabled='deleteAccountConfirm !== "I want to delete my account"') Confirm
+
+            p If you don&#39;t want to delete your account, click "Cancel".
+
+            button(@click='deleteAccountConfirm = null; willDeleteAccount = false') Cancel
+
+        div(v-else)
+            button(@click='willDeleteAccount = true') Delete Account
+
+
+        h4 Session Management
         button(@click='doLogout') Sign out
+
 </template>
 
 <style lang="stylus" scoped>

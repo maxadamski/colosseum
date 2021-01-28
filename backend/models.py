@@ -4,8 +4,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 
-# Regex for alphanumeric with special signs "^[a-zA-Z0-9!@#$&()\\-`.+,/\"]*$"
-
 def check_empty_string(v: str) -> str:
     if isinstance(v, str):
         s = v.strip()
@@ -33,7 +31,7 @@ class StudentPost(BaseModel):
     login: str
     password: str
     nickname: str
-    group_id: int
+    group_id: Optional[int] = None
 
     check_strings: classmethod = string_strip_validator('*')
 
